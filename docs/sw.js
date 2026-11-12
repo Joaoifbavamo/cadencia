@@ -1,4 +1,4 @@
-const CACHE = "cadencia-shell-index-4X-I-CYe.js-index-Bgh5rW4U.css";
+const CACHE = "cadencia-shell-index-Bgh5rW4U.css-index-d3B71nji.js";
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE).then((cache) =>
@@ -6,7 +6,7 @@ self.addEventListener("install", (event) => {
         "./",
         "./manifest.webmanifest",
         "./icons/apple-touch-icon.png",
-        "./assets/index-4X-I-CYe.js","./assets/index-Bgh5rW4U.css"
+        "./assets/index-Bgh5rW4U.css","./assets/index-d3B71nji.js"
       ]),
     ),
   );

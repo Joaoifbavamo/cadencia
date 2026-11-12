@@ -1,0 +1,3 @@
+import assert from 'node:assert/strict';
+const url=process.env.PROFILE_URL||'https://uapidlblgnkaowwffaxu.supabase.co/functions/v1/cadencia-profile';
+const response=await fetch(url);assert.equal(response.status,200);assert.match(response.headers.get('content-type')||'',/^application\/x-apple-aspen-config\b/);const xml=await response.text();assert.match(xml,/<string>com\.apple\.webClip\.managed<\/string>/);assert.match(xml,/<key>FullScreen<\/key>\s*<true\/>/);assert.doesNotMatch(xml,/<string>com\.apple\.(mdm|vpn|security\.root)/);console.log('PASS: download público com MIME Apple, XML Web Clip e abertura em tela cheia.');

@@ -1,4 +1,5 @@
 import { Download, Share, PlusSquare, Smartphone, Check } from "lucide-react";
+import {PROFILE_INSTALL_URL} from '../install-config.ts';
 export default function Install() {
   const standalone =
     matchMedia("(display-mode: standalone)").matches ||
@@ -33,7 +34,8 @@ export default function Install() {
         </p>
         <a
           className="primary profile-download"
-          href={import.meta.env.BASE_URL + "cadencia.mobileconfig"}
+          href={PROFILE_INSTALL_URL}
+          target="_blank" rel="noopener noreferrer"
         >
           <Download size={19} /> Baixar perfil de configuração
         </a>
