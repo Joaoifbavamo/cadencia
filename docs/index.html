@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#f4f6fa" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Cadência" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <link rel="icon" href="./icons/favicon.svg" type="image/svg+xml" />
+    <title>Cadência · seu diário de treino</title>
+    <script type="module" crossorigin src="./assets/index-4X-I-CYe.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Bgh5rW4U.css">
+  </head>
+  <body>
+    <script>
+      try {
+        const t = localStorage.getItem("cadencia-theme") || "system";
+        document.documentElement.dataset.theme =
+          t === "system"
+            ? matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light"
+            : t;
+      } catch {}
+    </script>
+    <div id="root"></div>
+  </body>
+</html>
