@@ -77,6 +77,33 @@ export interface Entity {
   batchId?: string;
 }
 export const uid = () => crypto.randomUUID();
+export const isUuid = (id: unknown) =>
+  typeof id === "string" &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+export async function setIdentity(
+  sessionId: string,
+  exerciseId: string,
+  index: number,
+) {
+  const b = new Uint8Array(
+    await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode([sessionId, exerciseId, index].join("|")),
+    ),
+  );
+  b[6] = (b[6] & 15) | 80;
+  b[8] = (b[8] & 63) | 128;
+  const s = Array.from(b.slice(0, 16), (v) =>
+    v.toString(16).padStart(2, "0"),
+  ).join("");
+  return [
+    s.slice(0, 8),
+    s.slice(8, 12),
+    s.slice(12, 16),
+    s.slice(16, 20),
+    s.slice(20),
+  ].join("-");
+}
 export function numberInput(value: string): number | null {
   const s = value.trim().replace(",", ".");
   return /^(\d+(\.\d*)?|\.\d+)$/.test(s) && Number.isFinite(Number(s))
@@ -304,7 +331,7 @@ export function validateImport(input: any): {
   const ids = new Set<string>();
   for (const d of input.documents) {
     if (
-      typeof d.id !== "string" ||
+      !isUuid(d.id) ||
       d.id.length > 100 ||
       ids.has(d.id) ||
       !validPayload(d.kind, d.payload)

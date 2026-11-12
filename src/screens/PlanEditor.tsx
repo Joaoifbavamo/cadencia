@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus, ChevronDown, ChevronUp, Trash2, Save } from "lucide-react";
 import type { Model } from "../model.ts";
+import { download } from "../components.tsx";
 import {
   uid,
   visible,
@@ -31,6 +32,9 @@ export default function PlanEditor({ model }: { model: Model }) {
     ),
   );
   const [message, setMessage] = useState("");
+  const [base, setBase] = useState<string | null>(
+    existing ? JSON.stringify(existing.payload) : null,
+  );
   const [open, setOpen] = useState("");
   const change = (fn: (p: Plan) => void) => {
     const p = structuredClone(plan);
@@ -68,7 +72,8 @@ export default function PlanEditor({ model }: { model: Model }) {
                 throw Error(
                   "Revise nomes, séries, faixa de repetições e descanso (15–600 s).",
                 );
-              await model.save(plan.id, "plan", plan);
+              await model.save(plan.id, "plan", plan, false, base);
+              setBase(JSON.stringify(plan));
               setMessage(
                 "Ficha salva neste dispositivo. Veja a sincronização no topo.",
               );
@@ -84,6 +89,41 @@ export default function PlanEditor({ model }: { model: Model }) {
         Treinos já iniciados mantêm a ficha original. Trocar um exercício ou
         aparelho exige uma referência de carga própria.
       </p>
+      {message.includes("mudou em outro lugar") && (
+        <div className="button-row">
+          <button
+            className="secondary"
+            onClick={() =>
+              download(
+                "cadencia-rascunho.json",
+                JSON.stringify(
+                  {
+                    format: "cadencia",
+                    version: 1,
+                    documents: [{ id: plan.id, kind: "plan", payload: plan }],
+                  },
+                  null,
+                  2,
+                ),
+              )
+            }
+          >
+            Baixar meu rascunho
+          </button>
+          <button
+            className="secondary"
+            onClick={() => {
+              if (existing) {
+                setPlan(structuredClone(existing.payload));
+                setBase(JSON.stringify(existing.payload));
+                setMessage("Ficha atual carregada.");
+              }
+            }}
+          >
+            Carregar ficha atual
+          </button>
+        </div>
+      )}
       <label>
         Nome da ficha
         <input

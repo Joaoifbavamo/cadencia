@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Check,
   WifiOff,
+  Download,
 } from "lucide-react";
 import { supabase } from "./auth.ts";
 import { LocalStore } from "./storage.ts";
@@ -35,6 +36,7 @@ import Progress from "./screens/Progress.tsx";
 import PlanEditor from "./screens/PlanEditor.tsx";
 import Settings from "./screens/Settings.tsx";
 import ThemeControl from "./ThemeControl.tsx";
+import Install from "./screens/Install.tsx";
 const defaults: Profile = {
   barWeight: null,
   increment: 2.5,
@@ -91,6 +93,7 @@ export default function App() {
     const start = async () => {
       try {
         local = await new LocalStore(account).open();
+        local.onChange = changed;
         if (cancelled) {
           local.close();
           return;
@@ -163,11 +166,17 @@ export default function App() {
     refresh();
     void engine.current?.run();
   }
-  async function save(id: string, kind: Kind, payload: any, deleted = false) {
+  async function save(
+    id: string,
+    kind: Kind,
+    payload: any,
+    deleted = false,
+    expectedPayload?: string | null,
+  ) {
     if (!validPayload(kind, payload))
       throw Error("Revise os campos antes de salvar.");
     if (!store.current) throw Error("Armazenamento indisponível.");
-    await store.current.mutate(id, kind, payload, deleted);
+    await store.current.mutate(id, kind, payload, deleted, expectedPayload);
     refresh();
     void engine.current?.run();
   }
@@ -268,6 +277,7 @@ export default function App() {
     { name: "Agenda", icon: CalendarDays },
     { name: "Evolução", icon: ChartNoAxesCombined },
     { name: "Meu treino", icon: Dumbbell },
+    { name: "Instalar", icon: Download },
   ];
   return (
     <div className={"app-shell " + (sessionId ? "training" : "")}>
@@ -397,6 +407,8 @@ export default function App() {
             <Progress model={model} />
           ) : tab === "Meu treino" ? (
             <PlanEditor model={model} />
+          ) : tab === "Instalar" ? (
+            <Install />
           ) : (
             <Settings model={model} onLogout={() => void logout()} />
           )}
@@ -479,8 +491,13 @@ export default function App() {
             <button
               className="primary"
               onClick={async () => {
-                await engine.current?.resolve(conflict.id, true);
-                setConflict(null);
+                try {
+                  await engine.current?.resolve(conflict.id, true);
+                  setConflict(null);
+                } catch (e) {
+                  setError((e as Error).message);
+                  setConflict(null);
+                }
               }}
             >
               Usar deste aparelho
@@ -488,8 +505,13 @@ export default function App() {
             <button
               className="secondary"
               onClick={async () => {
-                await engine.current?.resolve(conflict.id, false);
-                setConflict(null);
+                try {
+                  await engine.current?.resolve(conflict.id, false);
+                  setConflict(null);
+                } catch (e) {
+                  setError((e as Error).message);
+                  setConflict(null);
+                }
               }}
             >
               Usar da conta

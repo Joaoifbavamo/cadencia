@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import {
   ArrowLeft,
@@ -15,11 +15,14 @@ import {
   type Entity,
   visible,
   validateSet,
+  setIdentity,
   latestSet,
   warmup,
   unitLabel,
 } from "../domain.ts";
 import { Sheet } from "../components.tsx";
+import { scheduleRest, foregroundRest } from "../notifications.ts";
+import { timerRemaining } from "../notification-domain.ts";
 export default function Workout({
   model,
   sessionId,
@@ -56,7 +59,22 @@ export default function Workout({
     (d) => d.payload.exerciseId === exercise?.id,
   ).length;
   const total = session.workout.exercises.reduce((n, e) => n + e.sets, 0);
-  const remaining = Math.max(0, Math.ceil((deadline - tick) / 1000));
+  const remaining = timerRemaining(deadline, tick);
+  const [restFinished, setRestFinished] = useState(false);
+  const notified = useRef(0);
+  useEffect(() => {
+    if (
+      deadline > 0 &&
+      tick >= deadline &&
+      notified.current !== deadline &&
+      !session.finishedAt &&
+      tick - deadline < 300000
+    ) {
+      notified.current = deadline;
+      setRestFinished(true);
+      if (!model.demo) void foregroundRest(sessionId, deadline).catch(() => {});
+    }
+  }, [tick, deadline]);
   const elapsed = Math.max(
     0,
     Math.floor(
@@ -66,10 +84,17 @@ export default function Workout({
     ),
   );
   const timer = (s: number) => {
-    const d = Date.now() + s * 1000;
+    const d = s > 0 ? Date.now() + s * 1000 : 0;
     localStorage.setItem(key, String(d));
     setDeadline(d);
     setTick(Date.now());
+    setRestFinished(false);
+    if (!model.demo)
+      void scheduleRest(sessionId, d).catch(() =>
+        setError(
+          "O relógio funciona aqui; o aviso com o app fechado não foi agendado. Confira conexão e notificações.",
+        ),
+      );
   };
   const attempt = async (fn: () => Promise<void>) => {
     try {
@@ -180,6 +205,19 @@ export default function Workout({
         <p role="alert" className="error">
           {error}
         </p>
+      )}
+      {restFinished && (
+        <div className="rest-finished" role="status">
+          <Check size={18} />
+          <span>Descanso concluído. Próxima série quando estiver pronto.</span>
+          <button
+            className="icon"
+            aria-label="Dispensar aviso de descanso"
+            onClick={() => setRestFinished(false)}
+          >
+            <Check size={18} />
+          </button>
+        </div>
       )}
       {remaining > 0 && (
         <div className="rest-bar" role="timer">
@@ -312,6 +350,7 @@ export default function Workout({
                   ...session,
                   finishedAt: new Date().toISOString(),
                 });
+                timer(0);
                 onClose();
               })
             }
@@ -449,13 +488,17 @@ function ExerciseEntry({
               )
                 throw Error("A carga total deve incluir a barra.");
               const old = recorded.find((d) => d.payload.index === active);
-              await model.save(old?.id ?? crypto.randomUUID(), "set", {
-                sessionId: session.id,
-                exerciseId: e.id,
-                index: active,
-                ...values,
-                machine: e.machine,
-              });
+              await model.save(
+                old?.id ?? (await setIdentity(session.id, e.id, active)),
+                "set",
+                {
+                  sessionId: session.id,
+                  exerciseId: e.id,
+                  index: active,
+                  ...values,
+                  machine: e.machine,
+                },
+              );
               setWorking(String(values.load));
               onSave();
               const next = Array.from({ length: e.sets }, (_, i) => i).find(

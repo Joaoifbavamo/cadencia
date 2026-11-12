@@ -3,12 +3,14 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./styles.css";
 import { applyTheme } from "./theme.ts";
+import Launch from "./Launch.tsx";
 const preference = localStorage.getItem("cadencia-theme");
 applyTheme(
   preference === "light" || preference === "dark" ? preference : "system",
 );
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
+    <Launch />
     <App />
   </React.StrictMode>,
 );

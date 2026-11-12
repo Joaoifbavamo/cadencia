@@ -8,6 +8,7 @@ export interface Model {
     kind: Kind,
     payload: any,
     deleted?: boolean,
+    expectedPayload?: string | null,
   ) => Promise<void>;
   saveBatch: (
     changes: { id: string; kind: Kind; payload: any; deleted?: boolean }[],

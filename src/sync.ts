@@ -17,6 +17,7 @@ export class SyncEngine {
   running = false;
   stopped = false;
   error = "";
+  cursor = 0;
   constructor(store: LocalStore, notify: () => void) {
     this.store = store;
     this.notify = notify;
@@ -54,13 +55,7 @@ export class SyncEngine {
             throw error;
           }
           if (this.stopped) return;
-          await this.store.putMany(
-            (data as Entity[]).map((remote) => {
-              const captured = batch.find((d) => d.id === remote.id)!;
-              const current = this.store.docs.find((d) => d.id === remote.id)!;
-              return acknowledge(current, captured, remote);
-            }),
-          );
+          await this.store.ackMany(batch, data as Entity[]);
         } else {
           const { data, error } = await supabase.rpc(
             "commit_document",
@@ -69,10 +64,9 @@ export class SyncEngine {
           if (error) throw error;
           if (this.stopped) return;
           const current = this.store.docs.find((d) => d.id === sent.id)!;
-          if (data.ok)
-            await this.store.put(acknowledge(current, sent, data.document));
+          if (data.ok) await this.store.ack(sent, data.document);
           else if (data.remote)
-            await this.store.put({ ...current, conflict: data.remote });
+            await this.store.markConflict(sent.id, data.remote);
           else throw Error("O registro mudou. Exporte os dados e recarregue.");
         }
         this.notify();
@@ -91,9 +85,7 @@ export class SyncEngine {
     }
   }
   async pull() {
-    let cursor = Number(
-      localStorage.getItem("cursor-" + this.store.account) || 0,
-    );
+    let cursor = this.cursor;
     while (!this.stopped) {
       const { data, error } = await supabase
         .from("documents")
@@ -104,16 +96,9 @@ export class SyncEngine {
         .limit(250);
       if (error) throw error;
       if (this.stopped || !data.length) break;
-      await this.store.putMany(
-        data.map((remote) =>
-          mergeRemote(
-            this.store.docs.find((d) => d.id === remote.id),
-            remote as Entity,
-          ),
-        ),
-      );
+      await this.store.merge(data as Entity[]);
       cursor = Number(data[data.length - 1].change_seq);
-      localStorage.setItem("cursor-" + this.store.account, String(cursor));
+      this.cursor = cursor;
       this.notify();
       if (data.length < 250) break;
     }

@@ -3,6 +3,7 @@ import type { Model } from "../model.ts";
 import { visible, uid, validateImport, cleanupCandidates } from "../domain.ts";
 import { download, Sheet } from "../components.tsx";
 import ThemeControl from "../ThemeControl.tsx";
+import NotificationSettings from "../NotificationSettings.tsx";
 export default function Settings({
   model,
   onLogout,
@@ -56,6 +57,7 @@ export default function Settings({
         <p>Escolha o tema ou acompanhe o sistema do iPhone.</p>
         <ThemeControl />
       </section>
+      <NotificationSettings demo={model.demo} />
       <section className="settings-section">
         <h2>Cargas e aquecimento</h2>
         <p>
