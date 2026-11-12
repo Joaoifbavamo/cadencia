@@ -33,3 +33,11 @@ Referências dos avisos: [pg_net e schema](https://supabase.com/docs/guides/data
 Removida a linha de marca duplicada na sessão e os indicadores repetidos. Prescrição compacta; RIR, histórico editável, orientações e ajustes menos frequentes recolhíveis. Nenhuma regra de sincronização ou exclusão alterada. Testes de navegador passaram com carga decimal, RIR gravado e reeditado, retomada e larguras 320/375/390/430/676/1440 sem rolagem horizontal. Os 25 testes Node passaram. Detector executado uma vez: avisos consultivos de tamanhos/raios fora da rampa documental, incluindo valores preexistentes; novos tamanhos e raio de 12 px são intencionais e documentados.
 
 Revisão independente desta simplificação: ship, sem correções materiais, com 17 capturas e comparação anterior. Reexecução do navegador no ambiente do revisor foi bloqueada antes de carregar o app; testes funcionais acima foram executados no ambiente principal. Instalação física, VoiceOver e entrega de notificações no iPhone não foram inferidos dessa revisão.
+
+## Liquid Glass, Hoje e mensagens — 11/11/2026
+
+- 27 testes Node passaram; validação de horários, limites e rotação determinística adicionados. Navegador: editor rejeita horários repetidos e mantém nome/mensagem/ativação; larguras 320–1440 sem overflow; sete dias reais, temas e fallback sem blur com maior contraste.
+- Migração aplicada. Testes SQL em transação com rollback validaram deduplicação, interrupção ao desligar, proprietário pode editar, outro usuário bloqueado e RPC do agendador privado. Nenhuma preferência pessoal foi alterada pelos testes.
+- Edge v5: saúde 200/encryptionReady com autorização, 401 sem. Não enviamos teste real ao aparelho; entrega física continua não verificada.
+- Revisão independente: ship, sem problemas materiais nas fontes, SQL e capturas. Detector único: somente 111 avisos consultivos de rampa de tipos/raios/cores, incluindo valores anteriores. Vidro funcional e raios novos são escolhas solicitadas e documentadas.
+- Avisos Supabase permanecem os dois já documentados (pg_net e proteção opcional de senhas); nenhuma nova exposição de tabelas ou segredo foi criada.

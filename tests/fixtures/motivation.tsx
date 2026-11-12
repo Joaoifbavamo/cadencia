@@ -1,0 +1,2 @@
+import React from 'react';import {createRoot} from 'react-dom/client';import MotivationEditor from '../../src/MotivationEditor.tsx';import '../../src/styles.css';
+createRoot(document.getElementById('fixture')!).render(<div className="public-install"><h1>Mensagens</h1><MotivationEditor onSave={async data=>{document.getElementById('result')!.textContent=JSON.stringify(data)}}/><output role="status" id="result" style={{overflowWrap:"anywhere"}}/></div>);

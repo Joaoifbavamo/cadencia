@@ -34,6 +34,22 @@ export default function Today({
   const done = visible(model.docs, "session").filter(
     (s) => s.payload.actualDate === date && s.payload.finishedAt,
   );
+  const first = new Date(date + "T12:00:00Z");
+  first.setUTCDate(first.getUTCDate() - ((first.getUTCDay() + 6) % 7));
+  const week = Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(first);
+    day.setUTCDate(first.getUTCDate() + i);
+    const key = day.toISOString().slice(0, 10);
+    const completed = visible(model.docs, "session").filter(
+      (s) => s.payload.actualDate === key && s.payload.finishedAt,
+    ).length;
+    return { key, day, completed, planned: Boolean(plannedWorkout(plan, key)) };
+  });
+  const weekCount = week.reduce((n, d) => n + d.completed, 0);
+  const draftSets = draft
+    ? visible(model.docs, "set").filter((s) => s.payload.sessionId === draft.id)
+        .length
+    : 0;
   return (
     <div className="today-v2">
       <div className="page-title">
@@ -58,7 +74,7 @@ export default function Today({
             <span className="state-dot" /> Em andamento
           </div>
           <h2>{draft.payload.workout.name}</h2>
-          <p>Seu treino está salvo neste aparelho.</p>
+          <p>{draftSets} séries registradas · continue de onde parou</p>
           <button
             className="primary start-workout"
             onClick={() => onResume(draft.id)}
@@ -104,6 +120,53 @@ export default function Today({
           )}
         </section>
       )}
+      <section className="home-week" aria-label="Sua semana de treino">
+        <div>
+          <h2>Sua semana</h2>
+          <span>
+            {weekCount}{" "}
+            {weekCount === 1 ? "treino concluído" : "treinos concluídos"}
+          </span>
+        </div>
+        <ol>
+          {week.map((d) => (
+            <li
+              key={d.key}
+              className={
+                (d.key === date ? "is-today " : "") +
+                (d.completed ? "is-complete" : d.planned ? "is-planned" : "")
+              }
+              aria-label={
+                formatDate(d.key) +
+                (d.key === date ? ", hoje" : "") +
+                (d.completed
+                  ? ", treino concluído"
+                  : d.planned
+                    ? ", treino previsto"
+                    : ", dia livre")
+              }
+            >
+              <span>
+                {d.day
+                  .toLocaleDateString("pt-BR", {
+                    weekday: "short",
+                    timeZone: "UTC",
+                  })
+                  .slice(0, 3)}
+              </span>
+              <time
+                dateTime={d.key}
+                aria-current={d.key === date ? "date" : undefined}
+              >
+                {d.day.getUTCDate()}
+              </time>
+              <span className="week-mark" aria-hidden="true">
+                {d.completed ? <Check size={12} /> : null}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </section>
       {selected && (
         <section className="today-exercises">
           <details>

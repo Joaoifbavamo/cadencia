@@ -77,7 +77,9 @@ export async function enablePush(registration?: ServiceWorkerRegistration) {
   const id = deviceId(user.id);
   const { data: old, error: readError } = await supabase
     .from("push_subscriptions")
-    .select("daily_enabled,daily_time,rest_enabled")
+    .select(
+      "daily_enabled,daily_time,rest_enabled,motivation_enabled,motivation_name,motivation_slots",
+    )
     .eq("id", id)
     .maybeSingle();
   if (readError)
@@ -108,7 +110,9 @@ export async function currentPush() {
   if (!user) return null;
   const { data, error } = await supabase
     .from("push_subscriptions")
-    .select("id,enabled,daily_enabled,daily_time,rest_enabled")
+    .select(
+      "id,enabled,daily_enabled,daily_time,rest_enabled,motivation_enabled,motivation_name,motivation_slots",
+    )
     .eq("id", deviceId(user.id))
     .maybeSingle();
   if (error) throw Error("Não foi possível conferir as notificações.");
@@ -119,6 +123,9 @@ export async function updatePush(values: {
   daily_time?: string;
   rest_enabled?: boolean;
   enabled?: boolean;
+  motivation_enabled?: boolean;
+  motivation_name?: string;
+  motivation_slots?: { time: string; message: string }[];
 }) {
   const row = await currentPush();
   if (!row) throw Error("Ative primeiro as notificações deste aparelho.");

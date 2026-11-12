@@ -1,3 +1,4 @@
+import MotivationEditor from "./MotivationEditor.tsx";
 import { useEffect, useState } from "react";
 import {
   Bell,
@@ -289,6 +290,23 @@ export default function NotificationSettings({
         <p className="feedback" role="status">
           {message}
         </p>
+      )}
+      {(connected || demo) && (
+        <MotivationEditor
+          key={JSON.stringify([
+            row?.motivation_enabled,
+            row?.motivation_name,
+            row?.motivation_slots,
+          ])}
+          initial={row ?? undefined}
+          previewOnly={demo}
+          onSave={(data) =>
+            act(async () => {
+              await updatePush(data);
+              setMessage("Mensagens e horários salvos para este aparelho.");
+            })
+          }
+        />
       )}
       <details className="notification-help">
         <summary>Como os avisos funcionam</summary>

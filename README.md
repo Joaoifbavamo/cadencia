@@ -47,3 +47,11 @@ Ferramenta de registro, sem prescrição médica nem garantia de resultado de tr
 ## Interface
 
 Sistema editorial em preto, branco e cinzas neutros, Manrope variável local, temas claro/escuro/sistema e uma série por formulário. Referência de movimento: React Bits. Atualização pronta aparece com ação explícita e aguarda a saída do treino ou editor antes de recarregar.
+
+## Mensagens motivacionais e Liquid Glass
+
+Ajustes → Notificações → Mensagens motivacionais: até três horários distintos por dia no fuso de Brasília, nome/apelido opcional e mensagens próprias (160 caracteres). Campo vazio usa frases que variam por dia/horário. Salve a opção Receber mensagens para ativar neste aparelho; desligar e salvar interrompe os próximos avisos. Dependem da inscrição e permissão de notificações. Quando ativas, Enviar notificação de teste usa a primeira mensagem salva. Editor em modo demonstração oferece somente prévia local.
+
+Migração aditiva `supabase/motivation.sql`: preferências na inscrição protegida por RLS, limite no banco, deduplicação por data/horário, lease e expiração mantidos; agendador continua privado, sem novos acessos ao Vault. Aplicada ao projeto; não reaplique. Edge cadencia-push versão 5 usa a mesma função de mensagens do cliente (cópia versionada em seu diretório). Mensagens motivacionais iniciam desligadas e não leem a ficha pessoal.
+
+Liquid Glass é uma adaptação web para navegação/cabeçalho/diálogos móveis, com fallback sólido por suporte e preferências de acessibilidade. O conteúdo permanece opaco. A tela inicial mostra a semana real; não inventa sequência ou treino concluído.

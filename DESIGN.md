@@ -64,6 +64,8 @@ rounded:
   dialog: "8px"
   field-soft: "12px"
   action-soft: "12px"
+  home-panel: "22px"
+  glass-nav: "30px"
   sheet-mobile: "12px 12px 0 0"
 spacing:
   field-gap: "8px"
@@ -106,7 +108,7 @@ A sessão mostra uma série de cada vez. Nome específico do exercício, prescri
 - Contraste monocromático em claro, escuro e automático.
 - Manrope variável local e títulos de peso 750.
 - Registro com campos numéricos suaves e ação principal clara.
-- Profundidade reservada ao diálogo modal.
+- Profundidade funcional na navegação móvel e nos diálogos.
 
 ## Colors
 
@@ -143,9 +145,9 @@ A sessão tem largura máxima de 690 px: uma barra com voltar, treino, posição
 
 ## Elevation & Depth
 
-Superfícies planas agrupadas por divisores e preenchimento neutro. O diálogo usa a sombra estrutural 0 20px 80px var(--shadow), scrim por tema e desfoque de 3 px. A preferência por transparência reduzida remove o desfoque. CSS completo está no sidecar.
+Conteúdo opaco e neutro. No celular, navegação flutuante, cabeçalho fixo e diálogo usam uma adaptação web de Liquid Glass: superfície translúcida regular, blur de 24px e saturação de 1.25. A barra inferior tem sombra deslocada e borda luminosa; não há refração nativa ou vidro sobre os campos de registro. Sem suporte ao filtro, os fundos permanecem opacos. Redução de transparência ou maior contraste removem o blur e usam superfície sólida. O diálogo usa a sombra estrutural 0 20px 80px var(--shadow), scrim por tema e desfoque de 3 px. A preferência por transparência reduzida remove o desfoque. CSS completo está no sidecar.
 
-**The Flat Work Surface Rule.** A área de trabalho usa linhas e espaço; elevação identifica o diálogo modal.
+**The Flat Work Surface Rule.** A área de trabalho mantém conteúdo opaco; elevação identifica a camada funcional de navegação e diálogo.
 
 ## Shapes
 
@@ -188,3 +190,5 @@ Conteúdo visível por padrão. Troca de exercício desloca 6 px até zero, spri
 Inspeção do código implementado comparado à escolha Editorial direto. Não certifica hardware real, instalação PWA ou entrega de notificações em segundo plano.
 
 Refinamento móvel de 11/11/2026: usuário pediu menos poluição e aparência moderna. Mantidos preto/branco, Manrope, cinco destinos e comportamento dos dados. Referências consultadas: [ScreensDesign/Hevy](https://screensdesign.com/showcase/hevy-workout-tracker-gym-log), [Hevy — registro](https://www.hevyapp.com/features/track-workouts/). Adotados agrupamento, hierarquia e abertura progressiva; sem reproduzir telas ou adicionar recursos sociais.
+
+Adaptação Liquid Glass de 11/11/2026: painel de Hoje opaco de raio 22px, semana com sete dias derivados da ficha e dos registros; barra móvel flutuante de raio 30px acima da safe area. Referência: [Apple HIG Materials](https://developer.apple.com/design/human-interface-guidelines/materials). Mensagens motivacionais usam editor recolhível com prévia; permanecem opcionais por aparelho.

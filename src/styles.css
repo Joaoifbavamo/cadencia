@@ -2416,3 +2416,271 @@ th {
     clip-path: inset(50%);
   }
 }
+/* iPhone-inspired functional glass. Content remains opaque; no nested glass. */
+:root {
+  --glass-fill: rgba(255, 255, 255, 0.84);
+  --glass-edge: rgba(255, 255, 255, 0.94);
+  --glass-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+:root[data-theme="dark"] {
+  --glass-fill: rgba(28, 28, 28, 0.86);
+  --glass-edge: rgba(255, 255, 255, 0.18);
+  --glass-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.home-week {
+  margin: 8px 0 28px;
+}
+.home-week > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.home-week h2 {
+  font-size: 1rem;
+  font-weight: 650;
+  margin: 0;
+}
+.home-week > div > span {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.home-week ol {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.home-week li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 2px 7px;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.home-week time {
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 7px 0 4px;
+}
+.home-week .is-today {
+  background: var(--surface-alt);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.week-mark {
+  height: 12px;
+  display: flex;
+  align-items: center;
+}
+.is-planned .week-mark:after {
+  content: "";
+  width: 10px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--line-strong);
+}
+.motivation-settings {
+  border-block: 1px solid var(--line);
+  margin-top: 24px;
+}
+.motivation-settings > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.875rem;
+  font-weight: 650;
+  padding: 16px 0;
+  list-style: none;
+}
+.motivation-settings > summary > span {
+  font-weight: 450;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.motivation-settings > form {
+  display: grid;
+  gap: 20px;
+  padding: 4px 0 20px;
+}
+.motivation-settings form > p {
+  margin: 0;
+}
+.motivation-slots {
+  display: grid;
+  gap: 20px;
+}
+.motivation-slots fieldset {
+  min-width: 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  padding: 16px 0 0;
+  margin: 0;
+  display: grid;
+  gap: 14px;
+}
+.motivation-slots legend {
+  font-size: 0.8125rem;
+  font-weight: 650;
+  padding-right: 12px;
+}
+.slot-time {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+.slot-time label {
+  flex: 1;
+}
+.slot-time input {
+  width: 100%;
+}
+.slot-time .icon {
+  margin-bottom: 2px;
+}
+.motivation-settings label > .muted {
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+.notification-preview {
+  background: var(--surface-alt);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+}
+.notification-preview > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+}
+.notification-preview > div > span {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.notification-preview p {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  margin: 10px 0 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 760px) {
+  .app-shell {
+    background: var(--surface-alt);
+    min-height: 100dvh;
+  }
+  .app-top {
+    background: var(--surface);
+  }
+  .bottom-nav {
+    left: 12px;
+    right: 12px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    padding: 7px;
+    border: 1px solid var(--line);
+    border-radius: 30px;
+    gap: 0;
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.1);
+  }
+  .bottom-nav button {
+    border-radius: 24px;
+    min-height: 52px;
+    min-width: 0;
+    flex: 1;
+    color: var(--ink);
+  }
+  .bottom-nav button.active {
+    background: var(--surface);
+  }
+  .bottom-nav button span {
+    font-size: 0.625rem;
+  }
+  .app-top .mobile-settings {
+    border-radius: 50%;
+  }
+  .today-v2 .today-workout {
+    background: var(--surface);
+    border-radius: 22px;
+    padding: 24px;
+    margin-bottom: 28px;
+  }
+  .today-workout h2 {
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .today-v2 .workout-card-heading {
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .today-workout .start-workout {
+    margin-top: 20px;
+  }
+  .home-week .is-today {
+    background: var(--surface);
+  }
+  .today-exercises details {
+    border-top: 0;
+  }
+  .training .workout-head {
+    position: sticky;
+    top: env(safe-area-inset-top);
+    z-index: 4;
+    background: var(--surface);
+    border-radius: 18px;
+    padding: 4px 10px;
+    margin-inline: -10px;
+  }
+  .training main {
+    padding-bottom: calc(30px + env(safe-area-inset-bottom));
+  }
+  .sheet {
+    border-radius: 26px 26px 0 0;
+  }
+  @supports (
+    (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+  ) {
+    .bottom-nav,
+    .app-top,
+    .training .workout-head,
+    .sheet {
+      background: var(--glass-fill);
+      -webkit-backdrop-filter: blur(24px) saturate(1.25);
+      backdrop-filter: blur(24px) saturate(1.25);
+    }
+    .bottom-nav {
+      border-color: var(--glass-edge);
+      box-shadow: var(--glass-shadow);
+    }
+    .training .workout-head {
+      box-shadow: inset 0 1px 0 var(--glass-edge);
+    }
+    .sheet {
+      border-color: var(--glass-edge);
+      box-shadow: var(--glass-shadow);
+    }
+  }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .app-top,
+  .bottom-nav,
+  .training .workout-head,
+  .sheet {
+    background: var(--surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .bottom-nav,
+  .training .workout-head {
+    border: 1px solid var(--line-strong);
+    box-shadow: none;
+  }
+}
