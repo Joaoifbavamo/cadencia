@@ -1,6 +1,11 @@
 import { Download, Share, PlusSquare, Smartphone, Check } from "lucide-react";
-import {PROFILE_INSTALL_URL} from '../install-config.ts';
+import { PROFILE_INSTALL_URL } from "../install-config.ts";
+import { useState } from "react";
+import { readNotificationEnvironment } from "../notification-environment.ts";
 export default function Install() {
+  const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
+  const environment = readNotificationEnvironment();
   const standalone =
     matchMedia("(display-mode: standalone)").matches ||
     (navigator as Navigator & { standalone?: boolean }).standalone;
@@ -28,6 +33,12 @@ export default function Install() {
       </section>
       <section className="settings-section">
         <h2>Perfil de configuração</h2>
+        {!environment.ios && (
+          <p className="install-browser-note">
+            O perfil é instalado no iPhone ou iPad. Abra este endereço
+            diretamente no Safari do aparelho; aqui você pode copiar o link.
+          </p>
+        )}
         <p>
           O perfil cria um atalho Web Clip para este site. Ele contém somente o
           nome, ícone e endereço do Cadência.
@@ -35,15 +46,42 @@ export default function Install() {
         <a
           className="primary profile-download"
           href={PROFILE_INSTALL_URL}
-          target="_blank" rel="noopener noreferrer"
+          target="_blank"
+          rel="noopener noreferrer"
         >
           <Download size={19} /> Baixar perfil de configuração
         </a>
+        <button
+          className="text-button"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(PROFILE_INSTALL_URL);
+              setCopied(true);
+              setCopyError(false);
+            } catch {
+              setCopyError(true);
+            }
+          }}
+        >
+          {copied ? "Link copiado" : "Copiar link do perfil"}
+        </button>
+        {copyError && (
+          <label className="profile-link-copy">
+            Selecione e copie este endereço
+            <input
+              readOnly
+              value={PROFILE_INSTALL_URL}
+              onFocus={(e) => e.currentTarget.select()}
+            />
+          </label>
+        )}
         <ol className="install-steps">
           <li>
             <b>Baixe usando o Safari.</b>
             <span>
-              Confirme o download do perfil quando o iPhone perguntar.
+              O Safari deve mostrar um pedido para baixar o perfil. Confirme no
+              próprio aparelho. Se aparecer código, confira se abriu o link novo
+              diretamente no Safari.
             </span>
           </li>
           <li>

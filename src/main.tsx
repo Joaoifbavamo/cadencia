@@ -19,7 +19,6 @@ if ("serviceWorker" in navigator && import.meta.env.PROD)
     navigator.serviceWorker.register("./sw.js").catch(() => {});
   });
 
-import "./redesign.css";
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
   const saved = localStorage.getItem("cadencia-theme");
   applyTheme(saved === "light" || saved === "dark" ? saved : "system");

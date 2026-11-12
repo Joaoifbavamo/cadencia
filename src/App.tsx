@@ -37,6 +37,7 @@ import PlanEditor from "./screens/PlanEditor.tsx";
 import Settings from "./screens/Settings.tsx";
 import ThemeControl from "./ThemeControl.tsx";
 import Install from "./screens/Install.tsx";
+import UpdateNotice from "./UpdateNotice.tsx";
 const defaults: Profile = {
   barWeight: null,
   increment: 2.5,
@@ -301,6 +302,7 @@ export default function App() {
             <button
               key={n.name}
               className={tab === n.name && !sessionId ? "active" : ""}
+              aria-current={tab === n.name && !sessionId ? "page" : undefined}
               onClick={() => {
                 setTab(n.name);
                 setSessionId(null);
@@ -386,6 +388,7 @@ export default function App() {
             </button>
           </div>
         )}
+        <UpdateNotice defer={Boolean(sessionId) || tab === "Meu treino"} />
         <main>
           {sessionId ? (
             <Workout
@@ -410,7 +413,11 @@ export default function App() {
           ) : tab === "Instalar" ? (
             <Install />
           ) : (
-            <Settings model={model} onLogout={() => void logout()} />
+            <Settings
+              model={model}
+              onLogout={() => void logout()}
+              onInstall={() => setTab("Instalar")}
+            />
           )}
         </main>
         <footer className="app-footer">
@@ -422,6 +429,7 @@ export default function App() {
           <button
             key={n.name}
             className={tab === n.name && !sessionId ? "active" : ""}
+            aria-current={tab === n.name && !sessionId ? "page" : undefined}
             onClick={() => {
               setTab(n.name);
               setSessionId(null);
@@ -526,6 +534,16 @@ function Login({ onDemo }: { onDemo: () => void }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [reset, setReset] = useState(false);
+  const [installing, setInstalling] = useState(false);
+  if (installing)
+    return (
+      <div className="public-install">
+        <button className="text-button" onClick={() => setInstalling(false)}>
+          Voltar para entrar
+        </button>
+        <Install />
+      </div>
+    );
   return (
     <div className="login-shell">
       <div className="login-story">
@@ -644,6 +662,13 @@ function Login({ onDemo }: { onDemo: () => void }) {
           {reset ? "Voltar para entrar" : "Esqueci minha senha"}
         </button>
         <div className="login-divider" />
+        <button
+          className="text-button install-login"
+          onClick={() => setInstalling(true)}
+        >
+          <Download size={17} />
+          Instalar no iPhone
+        </button>
         <button className="secondary" onClick={onDemo}>
           Conhecer a demonstração <ArrowRight size={18} />
         </button>

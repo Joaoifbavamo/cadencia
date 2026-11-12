@@ -20,7 +20,7 @@ import {
   warmup,
   unitLabel,
 } from "../domain.ts";
-import { Sheet } from "../components.tsx";
+import { Sheet, Mark } from "../components.tsx";
 import { scheduleRest, foregroundRest } from "../notifications.ts";
 import { timerRemaining } from "../notification-domain.ts";
 export default function Workout({
@@ -127,6 +127,16 @@ export default function Workout({
     );
   return (
     <div className="workout-screen workout-v2">
+      <div className="workout-brand">
+        <div>
+          <Mark />
+          <span>cadência</span>
+        </div>
+        <span>
+          <Clock3 size={14} />
+          {elapsed} min
+        </span>
+      </div>
       <header className="workout-head">
         <button
           className="icon"
@@ -146,52 +156,33 @@ export default function Workout({
           {elapsed} min
         </span>
       </header>
-      <div className="steps">
-        {session.workout.exercises.map((e, i) => (
-          <button
-            key={e.id}
-            className={index === i ? "active" : ""}
-            aria-label={"Ir para " + e.name}
-            onClick={() => setIndex(i)}
-          >
-            <span
-              style={{
-                width:
-                  (sets.filter((s) => s.payload.exerciseId === e.id).length /
-                    e.sets) *
-                    100 +
-                  "%",
-              }}
-            />
-          </button>
-        ))}
-      </div>
       <motion.div
         key={exercise.id}
-        initial={false}
-        animate={{ opacity: 1, x: 0 }}
+        initial={reduced ? false : { y: 6 }}
+        animate={{ y: 0 }}
         transition={{ type: "spring", bounce: 0, duration: reduced ? 0 : 0.25 }}
       >
         <h1 className="exercise-title">{exercise.name}</h1>
-        <div className="prescription">
-          <span>
-            <b>
+        <dl className="prescription">
+          <div>
+            <dt>Séries × reps</dt>
+            <dd>
               {exercise.sets} × {exercise.min}–{exercise.max}
-            </b>{" "}
-            reps
-          </span>
-          <span>
-            RIR alvo <b>{exercise.rir}</b>
-          </span>
-          <span>
-            Descanso{" "}
-            <b>
+            </dd>
+          </div>
+          <div>
+            <dt>Esforço</dt>
+            <dd>RIR {exercise.rir}</dd>
+          </div>
+          <div>
+            <dt>Pausa</dt>
+            <dd>
               {exercise.rest >= 120
                 ? exercise.rest / 60 + " min"
                 : exercise.rest + " s"}
-            </b>
-          </span>
-        </div>
+            </dd>
+          </div>
+        </dl>
         <ExerciseEntry
           key={exercise.id}
           exercise={exercise}
@@ -399,12 +390,14 @@ function ExerciseEntry({
   return (
     <>
       {e.warm !== "none" && (
-        <details className="warmup compact-warmup" open={stages.length > 0}>
+        <details className="warmup compact-warmup">
           <summary>
             Aquecimento{" "}
             <span>
               {stages.length
-                ? stages.length + " aproximações sugeridas"
+                ? stages
+                    .map((s, i) => (custom[i] ?? s.load) + " kg")
+                    .join(" · ")
                 : "Definir cargas"}
             </span>
           </summary>
@@ -452,23 +445,30 @@ function ExerciseEntry({
       )}
       <section className="series-entry">
         <div className="series-heading">
-          <h2>Registrar série</h2>
+          <h2>
+            Série {active + 1} de {e.sets}
+          </h2>
           <span>
             {recorded.length} de {e.sets} feitas
           </span>
         </div>
-        <div className="series-tabs" aria-label="Séries deste exercício">
+        <div
+          className={"series-tabs " + (e.sets <= 5 ? "compact-series" : "")}
+          aria-label="Séries deste exercício"
+        >
           {Array.from({ length: e.sets }, (_, i) => (
             <button
               key={i}
               className={active === i ? "selected" : ""}
               aria-pressed={active === i}
+              aria-label={"Série " + (i + 1)}
+              title={"Série " + (i + 1)}
               onClick={() => setActive(i)}
             >
               {recorded.some((d) => d.payload.index === i) && (
                 <Check size={14} />
               )}
-              Série {i + 1}
+              <span className="series-label">Série {i + 1}</span>
             </button>
           ))}
         </div>
@@ -589,7 +589,7 @@ function SeriesForm({
             aria-label={"Carga série " + (index + 1)}
             inputMode="decimal"
             value={load}
-            placeholder={suggested || "0"}
+            placeholder={suggested || "—"}
             onChange={(e) => setLoad(e.target.value)}
           />
         </label>
@@ -602,7 +602,7 @@ function SeriesForm({
             aria-label={"Repetições série " + (index + 1)}
             inputMode="numeric"
             value={reps}
-            placeholder={exercise.min + "–" + exercise.max}
+            placeholder="—"
             onChange={(e) => setReps(e.target.value)}
           />
         </label>

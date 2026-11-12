@@ -1,4 +1,7 @@
 const CACHE = "cadencia-shell-v1";
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "ACTIVATE_UPDATE") self.skipWaiting();
+});
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE).then((cache) =>

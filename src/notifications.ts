@@ -14,41 +14,76 @@ export function deviceId(account: string) {
   }
   return id;
 }
-export async function enablePush() {
+export async function requestPushPermission() {
   if (!supportsPush())
     throw Error(
-      "No iPhone, instale o app na Tela de Início e abra pelo ícone para permitir notificações.",
+      "Abra o Cadência instalado na Tela de Início do iPhone para permitir avisos.",
     );
-  const permission = await Notification.requestPermission();
-  if (permission !== "granted")
+  const result = await Notification.requestPermission();
+  if (result !== "granted")
     throw Error(
-      "Permissão não concedida. Você pode alterá-la nos Ajustes do iPhone.",
+      result === "denied"
+        ? "Notificações bloqueadas. Altere a permissão do Cadência nos Ajustes do iPhone."
+        : "A permissão ainda não foi concedida.",
     );
-  if (!(await navigator.serviceWorker.getRegistration()))
+  return result;
+}
+export async function enablePush(registration?: ServiceWorkerRegistration) {
+  if (!supportsPush())
     throw Error(
-      "A instalação está sendo preparada. Feche e abra o app e tente novamente.",
+      "Este navegador não oferece Web Push. Confira a instalação na Tela de Início.",
     );
-  const registration = await navigator.serviceWorker.ready;
+  if (Notification.permission !== "granted")
+    throw Error("Permita os avisos primeiro; depois conecte este aparelho.");
+  if (!registration?.active)
+    throw Error(
+      "Aguarde a preparação do app ou atualize a página e tente novamente.",
+    );
+  const text = VAPID_PUBLIC_KEY.replace(/-/g, "+").replace(/_/g, "/");
   const bytes = Uint8Array.from(
-    atob(VAPID_PUBLIC_KEY.replace(/-/g, "+").replace(/_/g, "/")),
+    atob(text.padEnd(Math.ceil(text.length / 4) * 4, "=")),
     (c) => c.charCodeAt(0),
   );
-  const subscription =
-    (await registration.pushManager.getSubscription()) ||
-    (await registration.pushManager.subscribe({
+  // Begin subscription in the tap handler, before any await or network request.
+  let pending: Promise<PushSubscription>;
+  try {
+    pending = registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: bytes,
-    }));
+    });
+  } catch {
+    throw Error(
+      "O iPhone não iniciou a inscrição. Abra pelo ícone da Tela de Início e toque novamente.",
+    );
+  }
+  let subscription: PushSubscription;
+  try {
+    subscription = await pending;
+  } catch (e) {
+    const name = (e as DOMException)?.name;
+    throw Error(
+      name === "NotAllowedError"
+        ? "O iPhone recusou a inscrição. Confira a permissão e abra pelo ícone instalado."
+        : name === "InvalidStateError"
+          ? "A inscrição anterior é incompatível. Use Refazer conexão e conecte novamente."
+          : "Não foi possível inscrever o aparelho. Confira a internet e tente novamente.",
+    );
+  }
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw Error("Entre na sua conta.");
+  if (!user)
+    throw Error("Entre novamente na conta para conectar este aparelho.");
   const id = deviceId(user.id);
-  const { data: old } = await supabase
+  const { data: old, error: readError } = await supabase
     .from("push_subscriptions")
     .select("daily_enabled,daily_time,rest_enabled")
     .eq("id", id)
     .maybeSingle();
+  if (readError)
+    throw Error(
+      "O aparelho foi inscrito, mas a conta não respondeu. Confira a conexão e tente conectar novamente.",
+    );
   const { error } = await supabase.from("push_subscriptions").upsert({
     id,
     user_id: user.id,
@@ -58,7 +93,7 @@ export async function enablePush() {
   });
   if (error)
     throw Error(
-      "Não foi possível cadastrar este aparelho. Confira sua conexão e acesso à conta.",
+      "A inscrição não foi salva na conta. Confira o login e tente conectar novamente.",
     );
   localStorage.setItem("push-active", id);
   localStorage.setItem("push-rest", String(old?.rest_enabled !== false));
@@ -98,7 +133,7 @@ export async function updatePush(values: {
 }
 let queue: Promise<unknown> = Promise.resolve();
 export function scheduleRest(sessionId: string, deadline: number) {
-  if(!localStorage.getItem('push-active'))return Promise.resolve();
+  if (!localStorage.getItem("push-active")) return Promise.resolve();
   const task = async () => {
     const row = await currentPush();
     if (!row?.enabled || !row.rest_enabled) return;
@@ -153,8 +188,23 @@ export async function testPush() {
   const { data, error } = await supabase.functions.invoke("cadencia-push", {
     body: { subscriptionId: row.id },
   });
-  if (error || !data?.ok)
+  if (error) {
+    const context = (error as { context?: Response }).context;
+    if (context instanceof Response) {
+      let detail: any;
+      try {
+        detail = await context.json();
+      } catch {}
+      if (typeof detail?.error === "string") throw Error(detail.error);
+      if (context.status === 401)
+        throw Error("Entre novamente na conta antes de testar os avisos.");
+    }
     throw Error(
-      "Não foi possível enviar o teste. Confira a conexão ou aguarde um minuto.",
+      "Não foi possível alcançar o serviço de avisos. Confira a conexão e tente novamente.",
+    );
+  }
+  if (!data?.ok)
+    throw Error(
+      "O serviço não confirmou o envio. Reconecte este aparelho e tente novamente.",
     );
 }

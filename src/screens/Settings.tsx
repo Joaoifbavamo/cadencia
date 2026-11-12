@@ -7,9 +7,11 @@ import NotificationSettings from "../NotificationSettings.tsx";
 export default function Settings({
   model,
   onLogout,
+  onInstall,
 }: {
   model: Model;
   onLogout: () => void;
+  onInstall: () => void;
 }) {
   const [bar, setBar] = useState(
     model.profile.barWeight === null ? "" : String(model.profile.barWeight),
@@ -57,7 +59,7 @@ export default function Settings({
         <p>Escolha o tema ou acompanhe o sistema do iPhone.</p>
         <ThemeControl />
       </section>
-      <NotificationSettings demo={model.demo} />
+      <NotificationSettings demo={model.demo} onInstall={onInstall} />
       <section className="settings-section">
         <h2>Cargas e aquecimento</h2>
         <p>

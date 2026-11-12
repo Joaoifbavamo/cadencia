@@ -5,7 +5,7 @@ const browser = await chromium.launch({
   executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
   headless: true,
 });
-const out = new URL("../../../work/browser-v2/", import.meta.url);
+const out = new URL("../../../work/browser-monochrome/", import.meta.url);
 fs.mkdirSync(out, { recursive: true });
 const shot = (p, n) =>
   p.screenshot({
@@ -47,7 +47,7 @@ await page.getByRole("button", { name: "Escolher um treino" }).click();
 await page.getByRole("button", { name: /Superior · exemplo/ }).click();
 await shot(page, "iphone-light-today");
 await page.getByRole("button", { name: "Começar treino" }).click();
-await page.getByRole("heading", { name: "Registrar série" }).waitFor();
+await page.getByRole("heading", { name: "Série 1 de 3" }).waitFor();
 await shot(page, "iphone-light-workout");
 const saveButton = await page
   .getByRole("button", { name: "Salvar série 1", exact: true })

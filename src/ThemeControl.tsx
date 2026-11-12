@@ -26,9 +26,11 @@ export default function ThemeControl() {
           key={t.id}
           aria-pressed={theme === t.id}
           onClick={() => setTheme(t.id)}
+          aria-label={t.name}
+          title={t.name}
         >
           <t.Icon size={17} />
-          {t.name}
+          <span>{t.name}</span>
         </button>
       ))}
     </div>

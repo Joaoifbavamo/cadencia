@@ -14,6 +14,6 @@ export function applyTheme(preference: ThemePreference) {
   document.documentElement.style.colorScheme = theme;
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", theme === "dark" ? "#171d1b" : "#f5f5f0");
+    ?.setAttribute("content", theme === "dark" ? "#0b0b0b" : "#ffffff");
   localStorage.setItem("cadencia-theme", preference);
 }
