@@ -74,17 +74,13 @@ export default function Today({
               Trocar <ChevronDown size={16} />
             </button>
           </div>
-          <p>{selected.exercises.length} exercícios · sem superséries</p>
+          <p>{selected.exercises.length} exercícios</p>
           <button
             className="primary start-workout"
             onClick={() => onStart(selected, date, date)}
           >
             <Play size={18} /> Começar treino
           </button>
-          <p className="time-note">
-            Reserve até 45 min, incluindo aquecimento. O tempo real depende das
-            pausas e da academia.
-          </p>
         </section>
       ) : (
         <section className="today-workout rest-day">
@@ -110,7 +106,7 @@ export default function Today({
       )}
       {selected && (
         <section className="today-exercises">
-          <details open>
+          <details>
             <summary>
               Exercícios do treino <span>{selected.exercises.length}</span>
             </summary>
@@ -127,6 +123,10 @@ export default function Today({
                   </div>
                 </div>
               ))}
+              <p className="time-note">
+                Reserve até 45 min, incluindo aquecimento. O tempo real depende
+                das pausas e da academia.
+              </p>
             </div>
           </details>
           <button className="text-button" onClick={onPlan}>

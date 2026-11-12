@@ -20,7 +20,7 @@ import {
   warmup,
   unitLabel,
 } from "../domain.ts";
-import { Sheet, Mark } from "../components.tsx";
+import { Sheet } from "../components.tsx";
 import { scheduleRest, foregroundRest } from "../notifications.ts";
 import { timerRemaining } from "../notification-domain.ts";
 export default function Workout({
@@ -127,16 +127,6 @@ export default function Workout({
     );
   return (
     <div className="workout-screen workout-v2">
-      <div className="workout-brand">
-        <div>
-          <Mark />
-          <span>cadência</span>
-        </div>
-        <span>
-          <Clock3 size={14} />
-          {elapsed} min
-        </span>
-      </div>
       <header className="workout-head">
         <button
           className="icon"
@@ -252,7 +242,7 @@ export default function Workout({
         </button>
       </div>
       <details className="instructions">
-        <summary>Como executar e alternativas</summary>
+        <summary>Orientações e opções</summary>
         <p>
           {exercise.notes ||
             "Use amplitude confortável e execução controlada. Dor aguda é motivo para interromper."}
@@ -267,11 +257,14 @@ export default function Workout({
           séries, no RIR alvo, em duas exposições comparáveis, considere o menor
           aumento de carga disponível.
         </p>
+        <button
+          className="text-button skip-action"
+          onClick={() => setSkip(true)}
+        >
+          <SkipForward size={16} />
+          Pular este exercício
+        </button>
       </details>
-      <button className="text-button skip-action" onClick={() => setSkip(true)}>
-        <SkipForward size={16} />
-        Pular este exercício
-      </button>
       {session.skipped[exercise.id] && (
         <p className="fine">
           Pulado: {session.skipped[exercise.id]}{" "}
@@ -448,29 +441,6 @@ function ExerciseEntry({
           <h2>
             Série {active + 1} de {e.sets}
           </h2>
-          <span>
-            {recorded.length} de {e.sets} feitas
-          </span>
-        </div>
-        <div
-          className={"series-tabs " + (e.sets <= 5 ? "compact-series" : "")}
-          aria-label="Séries deste exercício"
-        >
-          {Array.from({ length: e.sets }, (_, i) => (
-            <button
-              key={i}
-              className={active === i ? "selected" : ""}
-              aria-pressed={active === i}
-              aria-label={"Série " + (i + 1)}
-              title={"Série " + (i + 1)}
-              onClick={() => setActive(i)}
-            >
-              {recorded.some((d) => d.payload.index === i) && (
-                <Check size={14} />
-              )}
-              <span className="series-label">Série {i + 1}</span>
-            </button>
-          ))}
         </div>
         <SeriesForm
           key={active}
@@ -515,35 +485,48 @@ function ExerciseEntry({
             {reference.rir !== null ? " · RIR " + reference.rir : ""}
           </p>
         )}
-        {!reference && recorded.length === 0 && (
-          <p className="reference-note">
-            Sem registro anterior desta variação. Escolha uma carga que permita
-            o RIR alvo.
-          </p>
-        )}
-        {recorded.length > 0 && (
+        <details className="series-history">
+          <summary>
+            Ver séries{" "}
+            <span>
+              {recorded.length}/{e.sets} feitas
+            </span>
+          </summary>
           <div className="saved-series">
-            {recorded
-              .sort((a, b) => a.payload.index - b.payload.index)
-              .map((d) => (
+            {Array.from({ length: e.sets }, (_, i) => {
+              const d = recorded.find((s) => s.payload.index === i);
+              return (
                 <button
-                  key={d.id}
-                  onClick={() => setActive(d.payload.index)}
-                  aria-label={"Editar série " + (d.payload.index + 1)}
+                  key={i}
+                  onClick={(ev) => {
+                    setActive(i);
+                    ev.currentTarget
+                      .closest("details")
+                      ?.removeAttribute("open");
+                  }}
+                  aria-label={
+                    d ? "Editar série " + (i + 1) : "Série " + (i + 1)
+                  }
+                  aria-current={active === i ? "step" : undefined}
                 >
-                  <Check size={15} />
-                  <span>{d.payload.index + 1}ª</span>
+                  {d && <Check size={15} />}
+                  <span>{i + 1}ª</span>
                   <b>
-                    {d.payload.load} kg × {d.payload.reps}
+                    {d
+                      ? `${d.payload.load} kg × ${d.payload.reps}`
+                      : "Sem registro"}
                   </b>
                   <small>
-                    {d.payload.rir === null ? "RIR —" : "RIR " + d.payload.rir}
+                    {d?.payload.rir != null ? "RIR " + d.payload.rir : ""}
                   </small>
-                  <span className="edit-link">Editar</span>
+                  <span className="edit-link">
+                    {d ? "Editar" : "Selecionar"}
+                  </span>
                 </button>
-              ))}
+              );
+            })}
           </div>
-        )}
+        </details>
       </section>
     </>
   );
@@ -607,19 +590,30 @@ function SeriesForm({
           />
         </label>
       </div>
-      <label className="optional-rir">
-        <span>
-          RIR <small>opcional · quantas ainda conseguiria fazer?</small>
-        </span>
-        <input
-          aria-label={"RIR série " + (index + 1) + " opcional"}
-          inputMode="decimal"
-          value={rir}
-          placeholder="—"
-          onChange={(e) => setRir(e.target.value)}
-        />
-      </label>
-      <button className="primary save-series" disabled={busy}>
+      <details
+        className="rir-disclosure"
+        open={initial?.payload.rir != null || undefined}
+      >
+        <summary>
+          RIR <span>opcional</span>
+        </summary>
+        <label className="optional-rir">
+          <span>
+            RIR <small>opcional · quantas ainda conseguiria fazer?</small>
+          </span>
+          <input
+            aria-label={"RIR série " + (index + 1) + " opcional"}
+            inputMode="decimal"
+            value={rir}
+            placeholder="—"
+            onChange={(e) => setRir(e.target.value)}
+          />
+        </label>
+      </details>
+      <button
+        className={(initial ? "secondary" : "primary") + " save-series"}
+        disabled={busy}
+      >
         <Check size={19} />
         {busy
           ? "Salvando…"

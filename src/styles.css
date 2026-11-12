@@ -534,98 +534,78 @@ main {
   max-width: 690px;
   margin: auto;
 }
-.workout-brand {
-  height: 62px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--line);
-  margin-bottom: 3px;
-}
-.workout-brand > div {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 1.45rem;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-}
-.workout-brand svg {
-  width: 28px;
-  height: 28px;
-}
-.workout-brand > span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.71rem;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
-.workout-brand > span svg {
-  width: 14px;
-  height: 14px;
-}
+
 .workout-head {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 68px;
-  margin-bottom: 9px;
+  gap: 12px;
+  min-height: 56px;
+  margin-bottom: 24px;
 }
 .workout-head > .icon {
   margin-left: -11px;
 }
 .workout-head > div {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
   flex: 1;
-  gap: 15px;
-  font-size: 0.77rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  font-size: 0.8rem;
 }
 .workout-head small {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 .workout-head > .elapsed {
-  display: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
 }
 .exercise-title {
-  font-size: 2.1rem;
-  line-height: 1.17;
-  font-weight: 750;
-  letter-spacing: -0.035em;
+  font-size: 1.9rem;
+  line-height: 1.22;
+  font-weight: 700;
+  letter-spacing: -0.03em;
   max-width: 550px;
 }
 .prescription {
   display: flex;
-  margin: 23px 0 22px;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 14px 0 20px;
 }
 .prescription > div {
-  padding: 0 24px;
-  border-left: 1px solid var(--line);
+  padding: 0;
+  border: 0;
 }
 .prescription > div:first-child {
   padding-left: 0;
   border: 0;
 }
 .prescription dt {
-  font-size: 0.72rem;
-  color: var(--muted);
-  margin-bottom: 5px;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  clip-path: inset(50%);
+  overflow: hidden;
 }
 .prescription dd {
   margin: 0;
-  font-size: 1.12rem;
-  font-weight: 750;
-  line-height: 1.4;
+  font-size: 0.875rem;
+  font-weight: 550;
+  color: var(--muted);
+  line-height: 1.5;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 .warmup {
-  margin: 20px 0 29px;
-  border-block: 1px solid var(--line);
+  margin: 12px 0 24px;
+  border: 0;
   padding: 0;
 }
 summary {
@@ -633,16 +613,16 @@ summary {
   min-height: 44px;
 }
 .warmup summary {
-  min-height: 50px;
-  padding: 12px 0;
-  font-size: 0.8rem;
-  font-weight: 650;
+  min-height: 44px;
+  padding: 11px 0;
+  font-size: 0.875rem;
+  font-weight: 600;
 }
 .warmup summary span {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   color: var(--muted);
-  font-weight: 400;
-  margin-left: 10px;
+  font-weight: 450;
+  margin-left: 8px;
 }
 .working-load {
   display: flex;
@@ -687,130 +667,58 @@ summary {
 }
 .series-entry {
   position: relative;
-  margin-top: 27px;
+  margin-top: 24px;
 }
 .series-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 .series-heading h2 {
-  font-size: 1.5rem;
-  font-weight: 750;
+  font-size: 1.0625rem;
+  font-weight: 650;
 }
 .series-heading > span {
   font-size: 0.71rem;
   color: var(--muted);
 }
-.series-tabs {
-  display: flex;
-  gap: 5px;
-  margin: 0 0 18px;
-  padding: 0;
-}
-.series-tabs button {
-  flex: 1;
-  min-height: 44px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  font-size: 0.73rem;
-  color: var(--muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-}
-.series-tabs button.selected {
-  background: var(--ink);
-  color: var(--bg);
-  border-color: var(--ink);
-}
-.series-entry:has(.compact-series) .series-heading > span {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  clip-path: inset(50%);
-  overflow: hidden;
-}
-.compact-series {
-  position: absolute;
-  top: -8px;
-  right: 0;
-  gap: 4px;
-  margin: 0;
-}
-.compact-series button {
-  position: relative;
-  flex: none;
-  width: 29px;
-  min-height: 44px;
-  border: 0;
-  background: transparent !important;
-  color: var(--ink) !important;
-  border-radius: 0;
-  padding: 0 3px;
-}
-.compact-series button:after {
-  content: "";
-  position: absolute;
-  left: 4px;
-  right: 4px;
-  bottom: 12px;
-  height: 3px;
-  background: var(--line-strong);
-}
-.compact-series button.selected:after {
-  background: var(--ink);
-  height: 4px;
-}
-.compact-series .series-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  clip-path: inset(50%);
-  overflow: hidden;
-}
-.compact-series svg {
-  width: 12px;
-  height: 12px;
-  position: absolute;
-  top: 2px;
-  left: 9px;
-}
+
 .series-main-fields {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 12px;
 }
 .series-main-fields label {
-  font-size: 0.87rem;
-  font-weight: 700;
+  font-size: 0.875rem;
+  font-weight: 600;
   gap: 0;
+  background: var(--surface-alt);
+  border-radius: 12px;
+  padding: 14px 16px 10px;
 }
 .field-unit {
   display: block;
-  min-height: 22px;
-  font-size: 0.66rem;
+  min-height: 20px;
+  font-size: 0.7rem;
   color: var(--muted);
   font-weight: 450;
   margin-top: 3px;
 }
 .series-main-fields input {
-  font-size: 2.7rem;
+  font-size: 2.25rem;
   line-height: 1.1;
   font-weight: 600;
   letter-spacing: -0.025em;
   font-variant-numeric: tabular-nums;
   border: 0;
-  border-bottom: 1px solid var(--line-strong);
   border-radius: 0;
   background: transparent;
-  min-height: 84px;
-  padding: 10px 0;
+  min-height: 64px;
+  padding: 8px 0;
   width: 100%;
-  margin-top: 2px;
+  margin: 0;
 }
 .series-main-fields input::placeholder {
   font-weight: 400;
@@ -846,15 +754,16 @@ summary {
 .save-series {
   display: flex;
   width: 100%;
-  min-height: 57px;
-  margin-top: 23px;
-  font-size: 0.9rem;
+  min-height: 54px;
+  margin-top: 12px;
+  font-size: 0.9375rem;
+  border-radius: 12px;
 }
 .reference-note {
-  font-size: 0.7rem;
-  line-height: 1.7;
+  font-size: 0.75rem;
+  line-height: 1.6;
   color: var(--muted);
-  margin-top: 13px;
+  margin-top: 12px;
 }
 .saved-series {
   display: grid;
@@ -917,23 +826,25 @@ summary {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  margin-top: 24px;
+  margin-top: 12px;
 }
 .exercise-nav .primary,
 .exercise-nav .secondary {
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   padding: 12px 16px;
   min-height: 46px;
+  border-radius: 10px;
 }
 .instructions {
-  border-top: 1px solid var(--line);
-  padding-top: 10px;
-  margin: 27px 0 2px;
+  border-top: 0;
+  padding-top: 0;
+  margin: 8px 0 0;
 }
 .instructions summary {
-  font-size: 0.8rem;
-  font-weight: 650;
-  padding: 8px 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 11px 0;
+  color: var(--muted);
 }
 .instructions p {
   font-size: 0.8rem;
@@ -1817,55 +1728,54 @@ th {
     padding-block: 6px;
     font-size: 0.6rem;
   }
-  .workout-brand {
-    height: 61px;
-  }
-  .workout-brand > div {
-    font-size: 1.4rem;
-  }
-  .workout-brand > span {
-    font-size: 0.64rem;
-  }
+
   .workout-head {
-    min-height: 61px;
-    margin-bottom: 10px;
-    gap: 7px;
+    min-height: 52px;
+    margin-bottom: 22px;
+    gap: 10px;
   }
   .workout-head > div {
-    font-size: 0.74rem;
-    gap: 8px;
+    font-size: 0.8rem;
+    gap: 2px;
   }
   .workout-head small {
-    font-size: 0.62rem;
+    font-size: 0.75rem;
+    color: var(--muted);
   }
   .exercise-title {
-    font-size: 2rem;
-    line-height: 1.16;
-    max-width: 320px;
-    letter-spacing: -0.035em;
+    font-size: 1.625rem;
+    line-height: 1.25;
+    max-width: none;
+    letter-spacing: -0.03em;
   }
   .prescription {
-    margin: 23px 0 20px;
+    margin: 12px 0 18px;
+    gap: 15px;
   }
   .prescription > div {
-    padding: 0 17px;
+    padding: 0;
+    border: 0;
   }
   .prescription dt {
-    font-size: 0.67rem;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+    overflow: hidden;
   }
   .prescription dd {
-    font-size: 1.03rem;
+    font-size: 0.875rem;
   }
   .warmup {
-    margin: 19px 0 27px;
+    margin: 8px 0 24px;
   }
   .warmup summary {
-    font-size: 0.77rem;
-    min-height: 49px;
+    font-size: 0.875rem;
+    min-height: 44px;
   }
   .warmup summary span {
-    font-size: 0.64rem;
-    margin-left: 7px;
+    font-size: 0.75rem;
+    margin-left: 8px;
   }
   .working-load {
     font-size: 0.7rem;
@@ -1884,38 +1794,31 @@ th {
     min-height: 40px;
   }
   .series-entry {
-    margin-top: 26px;
+    margin-top: 24px;
   }
   .series-heading {
-    margin-bottom: 14px;
+    margin-bottom: 16px;
   }
   .series-heading h2 {
-    font-size: 1.38rem;
+    font-size: 1.0625rem;
   }
   .series-heading > span {
     font-size: 0.63rem;
   }
-  .series-tabs {
-    margin-bottom: 18px;
-    gap: 5px;
-  }
-  .series-tabs button {
-    font-size: 0.68rem;
-    min-height: 40px;
-  }
+
   .series-main-fields {
-    gap: 18px;
+    gap: 12px;
   }
   .series-main-fields label {
-    font-size: 0.8rem;
+    font-size: 0.875rem;
   }
   .field-unit {
-    font-size: 0.62rem;
-    min-height: 21px;
+    font-size: 0.7rem;
+    min-height: 20px;
   }
   .series-main-fields input {
-    font-size: 2.6rem;
-    min-height: 76px;
+    font-size: 2.25rem;
+    min-height: 64px;
     margin: 0;
     padding: 8px 0;
   }
@@ -1935,14 +1838,14 @@ th {
     font-size: 1.1rem;
   }
   .save-series {
-    min-height: 56px;
-    font-size: 0.85rem;
-    margin-top: 25px;
+    min-height: 54px;
+    font-size: 0.9375rem;
+    margin-top: 12px;
   }
   .reference-note {
-    font-size: 0.66rem;
+    font-size: 0.75rem;
     margin-top: 12px;
-    line-height: 1.7;
+    line-height: 1.6;
   }
   .saved-series button {
     gap: 9px;
@@ -1973,7 +1876,7 @@ th {
   }
   .exercise-nav {
     gap: 10px;
-    margin-top: 23px;
+    margin-top: 12px;
   }
   .exercise-nav .primary,
   .exercise-nav .secondary {
@@ -1981,10 +1884,10 @@ th {
     padding: 11px 12px;
   }
   .instructions {
-    margin-top: 24px;
+    margin-top: 8px;
   }
   .instructions summary {
-    font-size: 0.74rem;
+    font-size: 0.875rem;
   }
   .instructions p {
     font-size: 0.74rem;
@@ -2263,13 +2166,20 @@ th {
     padding-inline: 20px;
   }
   .exercise-title {
-    font-size: 1.8rem;
+    font-size: 1.625rem;
+    line-height: 1.25;
+    max-width: none;
+    letter-spacing: -0.03em;
   }
   .prescription > div {
-    padding: 0 14px;
+    padding: 0;
+    border: 0;
   }
   .series-main-fields input {
-    font-size: 2.35rem;
+    font-size: 2.25rem;
+    min-height: 64px;
+    margin: 0;
+    padding: 8px 0;
   }
   .mobile-brand {
     font-size: 1.1rem;
@@ -2278,13 +2188,11 @@ th {
     font-size: 0.57rem;
   }
   .workout-head small {
-    font-size: 0.57rem;
+    font-size: 0.75rem;
+    color: var(--muted);
   }
   .bottom-nav button {
     min-width: 50px;
-  }
-  .series-tabs button {
-    font-size: 0.63rem;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2311,5 +2219,200 @@ th {
     --line: #aaa;
     --line-strong: #ccc;
     --muted: #ddd;
+  }
+}
+
+.rir-disclosure {
+  margin: 12px 0 0;
+}
+.rir-disclosure summary {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  padding: 11px 0;
+  font-weight: 500;
+}
+.rir-disclosure summary span {
+  margin-left: 5px;
+}
+.rir-disclosure .optional-rir {
+  margin: 6px 0 16px;
+}
+.series-history {
+  margin-top: 12px;
+}
+.series-history summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  padding: 10px 0;
+  list-style: none;
+}
+.series-history summary:after {
+  content: "+";
+  font-size: 1rem;
+  margin-left: 12px;
+}
+.series-history[open] summary:after {
+  content: "−";
+}
+.series-history summary span {
+  margin-left: auto;
+  font-size: 0.75rem;
+}
+.series-history .saved-series {
+  margin-top: 0;
+}
+.series-history button[aria-current] {
+  font-weight: 700;
+}
+.settings-disclosure {
+  padding-block: 0;
+}
+.settings-disclosure > summary {
+  display: flex;
+  align-items: center;
+  padding: 20px 0;
+  list-style: none;
+}
+.settings-disclosure > summary:after {
+  content: "+";
+  margin-left: auto;
+}
+.settings-disclosure[open] > summary:after {
+  content: "−";
+}
+.settings-disclosure > summary h2 {
+  margin: 0;
+}
+.settings-disclosure[open] {
+  padding-bottom: 24px;
+}
+@media (max-width: 760px) {
+  .app-top {
+    height: calc(58px + env(safe-area-inset-top));
+    border-bottom: 0;
+  }
+  .mobile-brand {
+    font-size: 1.125rem;
+  }
+  .sync-status:not(.pending) span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .sync-status {
+    margin-left: auto;
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
+  .bottom-nav {
+    padding-top: 6px;
+    border-top-color: var(--line);
+  }
+  main {
+    padding-top: 22px;
+  }
+  .page-title {
+    margin-bottom: 24px;
+  }
+  .page-title h1 {
+    font-size: 1.625rem;
+    font-weight: 700;
+  }
+  .today-date {
+    font-size: 0.8125rem;
+  }
+  .today-workout {
+    border: 0;
+    padding: 8px 0 24px;
+  }
+  .today-workout h2 {
+    font-size: 1.375rem;
+    font-weight: 650;
+  }
+  .today-workout > p {
+    font-size: 0.8125rem;
+  }
+  .today-workout .start-workout {
+    border-radius: 12px;
+    min-height: 54px;
+  }
+  .today-exercises {
+    margin-top: 0;
+  }
+  .today-exercises summary {
+    font-size: 0.875rem;
+  }
+  .today-exercises > .text-button {
+    font-size: 0.8125rem;
+  }
+  .demo-notice {
+    padding-block: 5px;
+    font-size: 0.6875rem;
+    align-items: center;
+  }
+  .demo-notice .text-button {
+    font-size: 0.6875rem;
+  }
+  .training main {
+    padding-top: calc(8px + env(safe-area-inset-top));
+  }
+  .exercise-nav .secondary {
+    border: 0;
+    color: var(--muted);
+    padding-inline: 0;
+    font-size: 0.8125rem;
+  }
+  .exercise-nav .secondary:disabled {
+    visibility: hidden;
+  }
+  .exercise-nav .primary {
+    border-radius: 12px;
+  }
+  .rest-bar,
+  .rest-finished {
+    border: 0;
+    border-radius: 12px;
+    margin-top: 16px;
+  }
+  .settings-section {
+    padding-block: 22px;
+  }
+  .settings-section h2 {
+    font-size: 1rem;
+  }
+  .settings-disclosure {
+    padding-block: 0;
+  }
+}
+
+.notification-settings .section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.notification-settings .section-heading h2 {
+  margin: 0;
+}
+.notification-help {
+  margin-top: 14px;
+}
+.notification-help summary {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  padding: 11px 0;
+}
+@media (max-width: 760px) {
+  .sync-status.demo-sync span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
   }
 }

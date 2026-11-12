@@ -57,18 +57,18 @@ if (!saveButton || saveButton.y + saveButton.height > 844)
 await page.getByLabel("Carga série 1", { exact: true }).fill("30,5");
 await page.getByLabel("Repetições série 1", { exact: true }).fill("8");
 await page.getByRole("button", { name: "Salvar série 1", exact: true }).click();
-await page
-  .getByRole("button", { name: "Editar série 1", exact: true })
-  .waitFor();
+await page.getByRole("heading", { name: "Série 2 de 3" }).waitFor();
 await page.reload();
 await page.getByRole("button", { name: "Conhecer a demonstração" }).click();
 await page.getByRole("button", { name: "Continuar treino" }).click();
-await page.getByRole("button", { name: "Série 1", exact: true }).click();
+await page.locator(".series-history summary").click();
+await page.getByRole("button", { name: "Editar série 1", exact: true }).click();
 if (
   (await page.getByLabel("Carga série 1", { exact: true }).inputValue()) !==
   "30.5"
 )
   throw Error("Draft not persisted");
+await page.locator(".series-history summary").click();
 await page.getByRole("button", { name: "Série 2", exact: true }).click();
 await page.getByLabel("Carga série 2", { exact: true }).fill("30");
 await page.getByLabel("Repetições série 2", { exact: true }).fill("0");

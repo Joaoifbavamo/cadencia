@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ArrowRight } from "lucide-react";
 import type { Model } from "../model.ts";
 import { visible, uid, validateImport, cleanupCandidates } from "../domain.ts";
 import { download, Sheet } from "../components.tsx";
@@ -60,8 +61,10 @@ export default function Settings({
         <ThemeControl />
       </section>
       <NotificationSettings demo={model.demo} onInstall={onInstall} />
-      <section className="settings-section">
-        <h2>Cargas e aquecimento</h2>
+      <details className="settings-section settings-disclosure">
+        <summary>
+          <h2>Cargas e aquecimento</h2>
+        </summary>
         <p>
           Informe o peso real da barra usada. O campo de carga dos exercícios
           com barra sempre inclui a barra.
@@ -116,22 +119,16 @@ export default function Settings({
             Salvar preferências
           </button>
         </form>
+      </details>
+      <section className="settings-section installation-shortcut">
+        <button className="text-button" onClick={onInstall}>
+          Instalar no iPhone <ArrowRight size={16} />
+        </button>
       </section>
-      <section className="settings-section">
-        <h2>No seu iPhone</h2>
-        <p>
-          Abra este endereço no Safari. Toque em Compartilhar → Adicionar à Tela
-          de Início. Se aparecer a opção, ative Abrir como App da Web e confirme
-          Adicionar.
-        </p>
-        <p className="muted">
-          O ícone Cadência abre como app da web. Após o primeiro acesso
-          completo, a interface pode abrir sem internet. Seus registros
-          pendentes serão enviados quando a conexão voltar.
-        </p>
-      </section>
-      <section className="settings-section">
-        <h2>Seus dados</h2>
+      <details className="settings-section settings-disclosure">
+        <summary>
+          <h2>Seus dados</h2>
+        </summary>
         <p>
           A ficha pessoal é importada aqui e fica na sua conta. O código público
           não contém seu histórico.
@@ -212,9 +209,11 @@ export default function Settings({
           Importe somente arquivos seus. Arquivos não incluem senha ou sessão de
           login.
         </p>
-      </section>
-      <section className="settings-section">
-        <h2>Gerenciar histórico</h2>
+      </details>
+      <details className="settings-section settings-disclosure">
+        <summary>
+          <h2>Gerenciar histórico</h2>
+        </summary>
         <p>
           Limpeza automática desligada. Sessões em andamento e a última
           referência de cada variação são preservadas.
@@ -242,7 +241,7 @@ export default function Settings({
         >
           Ver prévia da limpeza
         </button>
-      </section>
+      </details>
       <section className="settings-section">
         <h2>Conta e privacidade</h2>
         <p>

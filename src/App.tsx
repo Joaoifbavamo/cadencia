@@ -340,6 +340,7 @@ export default function App() {
           <button
             className={
               "sync-status " +
+              (account === "demo" ? "demo-sync " : "") +
               (dirty || !online || engine.current?.error ? "pending" : "")
             }
             onClick={() =>
@@ -347,7 +348,7 @@ export default function App() {
                 ? setConflict(conflicts[0])
                 : void engine.current?.run()
             }
-            title="Conferir sincronização"
+            title={"Sincronização: " + status}
           >
             {!online ? (
               <WifiOff size={16} />
@@ -371,7 +372,7 @@ export default function App() {
         </header>
         {account === "demo" && (
           <div className="demo-notice">
-            Modo de demonstração · ficha fictícia · salvo só neste aparelho{" "}
+            Demonstração · dados fictícios{" "}
             <button className="text-button" onClick={() => void logout()}>
               Entrar na conta <ArrowRight size={15} />
             </button>

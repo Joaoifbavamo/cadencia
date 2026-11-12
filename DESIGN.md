@@ -40,13 +40,20 @@ typography:
   label:
     fontSize: "0.83rem"
     fontWeight: 650
+  headline-mobile:
+    fontSize: "1.625rem"
+    fontWeight: 700
+  control-mobile:
+    fontSize: "0.9375rem"
+  caption:
+    fontSize: "0.75rem"
   exercise-mobile:
-    fontSize: "2rem"
-    fontWeight: 750
-    lineHeight: "1.16"
+    fontSize: "1.625rem"
+    fontWeight: 700
+    lineHeight: "1.25"
     letterSpacing: "-0.035em"
   series-number-mobile:
-    fontSize: "2.6rem"
+    fontSize: "2.25rem"
     fontWeight: 600
     lineHeight: "1.1"
     letterSpacing: "-0.025em"
@@ -55,6 +62,8 @@ rounded:
   compact: "4px"
   control: "5px"
   dialog: "8px"
+  field-soft: "12px"
+  action-soft: "12px"
   sheet-mobile: "12px 12px 0 0"
 spacing:
   field-gap: "8px"
@@ -96,7 +105,7 @@ A sessão mostra uma série de cada vez. Nome específico do exercício, prescri
 **Key Characteristics:**
 - Contraste monocromático em claro, escuro e automático.
 - Manrope variável local e títulos de peso 750.
-- Registro com números grandes e linha inferior.
+- Registro com campos numéricos suaves e ação principal clara.
 - Profundidade reservada ao diálogo modal.
 
 ## Colors
@@ -120,7 +129,7 @@ A preferência por maior contraste reforça divisores e texto secundário; seus 
 
 **Display Font / Body Font:** Manrope Variable, Manrope, sans-serif. WOFF2 latino local de @fontsource-variable/manrope, pesos 200–800 e font-display: swap. O fallback sans-serif é contingência.
 
-A hierarquia está no frontmatter. O título do exercício usa 2.1rem, peso 750 e entrelinha 1.17 no desktop; até 760 px usa a variante móvel. Até 360 px, passa a 1.8rem e o número de registro a 2.35rem. Texto corrido tem largura máxima de 70ch. Prescrição, duração e registro usam números tabulares. Marca usa peso 800 com ajustes por contexto.
+A hierarquia está no frontmatter. O título do exercício usa 1.9rem, peso 700 e entrelinha 1.22 no desktop; até 760 px usa 1.625rem e entrelinha 1.25. Números dos campos usam 2.25rem. Texto corrido tem largura máxima de 70ch. Prescrição, duração e registro usam números tabulares. Marca usa peso 800 com ajustes por contexto.
 
 **The Local Type Rule.** Novas superfícies herdam a Manrope local; não carregam a fonte remota do mock.
 
@@ -130,7 +139,7 @@ Desktop: menu fixo de 232 px, cabeçalho até 1100 px e conteúdo até 1010 px; 
 
 Até 760 px, cabeçalho e navegação inferior substituem o menu. Conteúdo recebe 27 px acima e 115 px abaixo. Safe areas protegem os extremos. Até 360 px, gutter de 20 px. Na sessão, navegação principal fica oculta e a base recebe 30 px mais safe area.
 
-A sessão tem largura máxima de 690 px: marca com divisor, navegação curta, exercício, prescrição em três colunas, aquecimento recolhível e formulário da série. Carga e repetições ocupam duas colunas iguais, gap de 24 px no desktop e 18 px no celular. Salvar série ocupa a largura, mínimo de 57 px no desktop e 56 px no celular. Esta composição descreve a superfície de treino, sem obrigar outras telas a repeti-la.
+A sessão tem largura máxima de 690 px: uma barra com voltar, treino, posição e duração; exercício, prescrição compacta e aquecimento recolhível. Carga e repetições ocupam duas colunas iguais com gap de 12 px. Salvar série ocupa a largura e tem mínimo de 54 px. RIR opcional fica recolhido; quando já registrado, abre para edição. Ver séries reúne seleção e edição, sem uma segunda fileira de indicadores. Esta composição descreve a superfície de treino, sem obrigar outras telas a repeti-la.
 
 ## Elevation & Depth
 
@@ -140,7 +149,7 @@ Superfícies planas agrupadas por divisores e preenchimento neutro. O diálogo u
 
 ## Shapes
 
-Controles têm cantos curtos, conforme frontmatter. Campos grandes de carga e repetições são quadrados, com linha inferior. Divisores têm 1 px. Diálogo central no desktop e encostado na base no celular, com arredondamento somente acima. Círculos de estado e cantos do ícone instalado são usos específicos.
+Controles gerais mantêm cantos curtos; campos e ações principais do fluxo móvel usam 12 px, conforme frontmatter. Campos grandes de carga e repetições têm fundo surface-alt, raio de 12 px e nenhum divisor inferior. Divisores têm 1 px. Diálogo central no desktop e encostado na base no celular, com arredondamento somente acima. Círculos de estado e cantos do ícone instalado são usos específicos.
 
 ## Components
 
@@ -148,13 +157,13 @@ Controles têm cantos curtos, conforme frontmatter. Campos grandes de carga e re
 Ação principal sólida, tinta e papel invertidos; secundária transparente com contorno forte. Peso 750, mínimo de 50 px. Hover da secundária usa surface-alt. A ação de perigo usa o mesmo contraste e texto explícito. Pressionar desloca 1 px para baixo; desabilitado tem opacidade 0.42. Ação de texto sublinha ao hover. Ícones gerais usam caixa de 44 × 44 px.
 
 ### Inputs / Fields
-Campo comum tem altura mínima de 49 px, label acima com gap de 8 px, borda forte e placeholder próprio. Foco: contorno de tinta de 2 px, offset de 2 px. Na série, campos numéricos usam a variante do frontmatter, mínimo de 76 px no celular. RIR opcional fica separado em campo compacto.
+Campo comum tem altura mínima de 49 px, label acima com gap de 8 px, borda forte e placeholder próprio. Foco: contorno de tinta de 2 px, offset de 2 px. Na série, campos numéricos usam a variante do frontmatter, mínimo de 64 px dentro do label com padding 14px 16px 10px. RIR opcional abre seu campo compacto sob demanda.
 
 ### Navigation
-Menu desktop tem mínimo de 50 px; ativo inverte tinta e papel. Navegação móvel tem mínimo de 48 px, rótulos e ativo em superfície secundária com peso maior. Série usa navegação própria; indicadores compactos mantêm labels acessíveis.
+Menu desktop tem mínimo de 50 px; ativo inverte tinta e papel. Navegação móvel tem mínimo de 48 px, rótulos e ativo em superfície secundária com peso maior. Série usa navegação própria; Ver séries abre registros e séries ainda vazias, com nomes acessíveis para editar ou selecionar.
 
 ### Cards / Containers
-Painel do treino: bordas superior e inferior de tinta, sem sombra nem caixa arredondada. Exercícios e registros usam divisores. Avisos e erros usam superfície secundária, contorno e texto explícito; erro reforça a borda com tinta.
+Painel do treino tem bordas no desktop; no celular usa espaço sem bordas. Lista de exercícios de Hoje fica recolhida. Ajustes de carga, dados e limpeza ficam em seções recolhíveis; a instalação tem um único atalho para a área própria. Avisos e erros usam superfície secundária, contorno e texto explícito; erro reforça a borda com tinta.
 
 ### Dialogs and appearance
 Diálogo nativo possui título e ação Fechar. Aparência agrupa Claro, Escuro e Sistema com aria-pressed e seleção invertida. Os snippets do sidecar registram a apresentação; não substituem o comportamento React ou nativo.
@@ -177,3 +186,5 @@ Conteúdo visível por padrão. Troca de exercício desloca 6 px até zero, spri
 - **Don't** declarar validação em iPhone físico ou entrega em segundo plano sem evidência.
 
 Inspeção do código implementado comparado à escolha Editorial direto. Não certifica hardware real, instalação PWA ou entrega de notificações em segundo plano.
+
+Refinamento móvel de 11/11/2026: usuário pediu menos poluição e aparência moderna. Mantidos preto/branco, Manrope, cinco destinos e comportamento dos dados. Referências consultadas: [ScreensDesign/Hevy](https://screensdesign.com/showcase/hevy-workout-tracker-gym-log), [Hevy — registro](https://www.hevyapp.com/features/track-workouts/). Adotados agrupamento, hierarquia e abertura progressiva; sem reproduzir telas ou adicionar recursos sociais.

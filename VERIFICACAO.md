@@ -27,3 +27,9 @@ Referências dos avisos: [pg_net e schema](https://supabase.com/docs/guides/data
 - Fluxo de notificações separa permissão e conexão para preservar o gesto do usuário no iPhone. Quatro testes de estados novos; serviço cadencia-push versão 4 respondeu 401 sem autorização e 200/encryptionReady ao agendador. Isso verifica autenticação e preparação criptográfica, não entrega no aparelho.
 - Revisão final visual independente realizada por agente genérico em substituição ao papel especializado indisponível; fidelidade aprovada nas capturas. Correção documental aplicada e confirmada pelo mesmo revisor; disposição final: ship no escopo visual/documental.
 - Instalação física do perfil e recebimento real no iPhone continuam pendentes: usuário informou não estar no Safari. Não foi usada senha do usuário nem presumida entrega de notificações.
+
+## Refinamento móvel limpo e moderno — 11/11/2026
+
+Removida a linha de marca duplicada na sessão e os indicadores repetidos. Prescrição compacta; RIR, histórico editável, orientações e ajustes menos frequentes recolhíveis. Nenhuma regra de sincronização ou exclusão alterada. Testes de navegador passaram com carga decimal, RIR gravado e reeditado, retomada e larguras 320/375/390/430/676/1440 sem rolagem horizontal. Os 25 testes Node passaram. Detector executado uma vez: avisos consultivos de tamanhos/raios fora da rampa documental, incluindo valores preexistentes; novos tamanhos e raio de 12 px são intencionais e documentados.
+
+Revisão independente desta simplificação: ship, sem correções materiais, com 17 capturas e comparação anterior. Reexecução do navegador no ambiente do revisor foi bloqueada antes de carregar o app; testes funcionais acima foram executados no ambiente principal. Instalação física, VoiceOver e entrega de notificações no iPhone não foram inferidos dessa revisão.

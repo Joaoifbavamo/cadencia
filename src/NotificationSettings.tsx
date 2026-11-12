@@ -290,11 +290,14 @@ export default function NotificationSettings({
           {message}
         </p>
       )}
-      <p className="fine">
-        Com o app aberto, o relógio usa o prazo exato. Fora dele, o servidor
-        verifica a cada minuto; rede, modo Foco e iOS podem atrasar a entrega. O
-        aviso remoto depende de internet.
-      </p>
+      <details className="notification-help">
+        <summary>Como os avisos funcionam</summary>
+        <p className="fine">
+          Com o app aberto, o relógio usa o prazo exato. Fora dele, o servidor
+          verifica a cada minuto; rede, modo Foco e iOS podem atrasar a entrega.
+          O aviso remoto depende de internet.
+        </p>
+      </details>
     </section>
   );
 }
