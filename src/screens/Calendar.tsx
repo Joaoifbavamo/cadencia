@@ -1,2 +1,272 @@
-import {useState} from 'react';import {ChevronLeft,ChevronRight,Plus,ArrowUpRight} from 'lucide-react';import type {Model} from '../model.ts';import {visible,todayKey,plannedWorkout,uid,type Plan,type Workout} from '../domain.ts';import {Sheet,formatDate} from '../components.tsx';
-export default function Calendar({model,onStart,onOpen}:{model:Model;onStart:(w:Workout,actual:string,planned:string)=>void;onOpen:(id:string)=>void}){const [date,setDate]=useState(todayKey());const [month,setMonth]=useState(date.slice(0,7));const [activity,setActivity]=useState(false);const [error,setError]=useState('');const [planned,setPlanned]=useState(date);const [workoutId,setWorkoutId]=useState('');const plan=visible(model.docs,'plan')[0]?.payload as Plan|undefined;const selected=plan?.workouts.find(w=>w.id===workoutId)||plannedWorkout(plan,date)||plan?.workouts[0];const start=new Date(month+'-01T12:00:00Z');const offset=(start.getUTCDay()+6)%7;const count=new Date(start.getUTCFullYear(),start.getUTCMonth()+1,0).getDate();const sessions=visible(model.docs,'session');const activities=visible(model.docs,'activity');const shift=(n:number)=>{const d=new Date(month+'-15T12:00:00Z');d.setUTCMonth(d.getUTCMonth()+n);setMonth(d.toISOString().slice(0,7))};return <><div className="page-title"><h1>Agenda</h1><button className="secondary" onClick={()=>{setDate(todayKey());setMonth(todayKey().slice(0,7))}}>Hoje</button></div><div className="calendar-panel"><div className="month-title"><button className="icon" aria-label="Mês anterior" onClick={()=>shift(-1)}><ChevronLeft/></button><h2>{start.toLocaleDateString('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'})}</h2><button className="icon" aria-label="Próximo mês" onClick={()=>shift(1)}><ChevronRight/></button></div><div className="calendar-grid">{['S','T','Q','Q','S','S','D'].map((d,i)=><span className="day-label" key={i}>{d}</span>)}{Array.from({length:offset},(_,i)=><span key={'blank'+i}/>)}{Array.from({length:count},(_,i)=>{const d=month+'-'+String(i+1).padStart(2,'0');const done=sessions.some(s=>s.payload.actualDate===d&&s.payload.finishedAt)||activities.some(a=>a.payload.date===d);return <button key={d} className={d===date?'selected':''} onClick={()=>{setDate(d);setPlanned(d)}}><b>{i+1}</b><i className={done?'trained':plannedWorkout(plan,d)?'planned':''}/></button>})}</div><p className="fine legend"><i className="trained"/> Registrado <i className="planned"/> Previsto</p></div><section className="calendar-detail"><h2>{formatDate(date)}</h2><p className="muted">{plannedWorkout(plan,date)?.name||'Dia livre na ficha'}</p>{sessions.filter(s=>s.payload.actualDate===date).map(s=><div className="agenda-row" key={s.id}><div><b>{s.payload.workout.name}</b><p>{s.payload.finishedAt?'Concluído':'Rascunho'} · previsto: {formatDate(s.payload.plannedDate)}</p><label>Data realizada<input type="date" value={s.payload.actualDate} onChange={e=>e.target.value&&model.save(s.id,'session',{...s.payload,actualDate:e.target.value}).catch(e=>setError(e.message))}/></label></div><button className="icon" aria-label="Abrir registro" onClick={()=>onOpen(s.id)}><ArrowUpRight/></button></div>)}{activities.filter(a=>a.payload.date===date).map(a=><div className="agenda-row" key={a.id}><div><b>{a.payload.name}</b><p>{a.payload.minutes} min · {a.payload.notes}</p></div><button className="text-button" onClick={()=>{if(confirm('Excluir esta atividade?'))model.save(a.id,'activity',a.payload,true).catch(e=>setError(e.message))}}>Excluir</button></div>)}{selected&&<div className="schedule-form"><label>Treino a realizar<select value={selected.id} onChange={e=>setWorkoutId(e.target.value)}>{plan?.workouts.map(w=><option key={w.id} value={w.id}>{w.name}</option>)}</select></label><label>Data originalmente prevista<input type="date" value={planned} onChange={e=>setPlanned(e.target.value)}/></label><button className="primary" onClick={()=>onStart(selected,date,planned)}>Registrar neste dia <Plus size={18}/></button></div>}<button className="secondary" onClick={()=>setActivity(true)}>Adicionar cardio ou atividade <Plus size={18}/></button>{error&&<p role="alert" className="error">{error}</p>}</section>{activity&&<Sheet title="Nova atividade" onClose={()=>setActivity(false)}><form onSubmit={async e=>{e.preventDefault();const f=new FormData(e.currentTarget);try{await model.save(uid(),'activity',{date,name:String(f.get('name')),minutes:Number(f.get('minutes')),notes:String(f.get('notes'))});setActivity(false)}catch(e){setError(String(e))}}}><label>Atividade<input name="name" required placeholder="Caminhada, bicicleta…"/></label><label>Duração em minutos<input name="minutes" type="number" min="1" max="1440" required inputMode="numeric"/></label><label>Observação opcional<textarea name="notes"/></label><button className="primary">Salvar atividade</button></form></Sheet>}</>}
+import { useState } from "react";
+import { ChevronLeft, ChevronRight, Plus, ArrowUpRight } from "lucide-react";
+import type { Model } from "../model.ts";
+import {
+  visible,
+  todayKey,
+  plannedWorkout,
+  uid,
+  type Plan,
+  type Workout,
+} from "../domain.ts";
+import { Sheet, formatDate } from "../components.tsx";
+export default function Calendar({
+  model,
+  onStart,
+  onOpen,
+}: {
+  model: Model;
+  onStart: (w: Workout, actual: string, planned: string) => void;
+  onOpen: (id: string) => void;
+}) {
+  const [date, setDate] = useState(todayKey());
+  const [month, setMonth] = useState(date.slice(0, 7));
+  const [activity, setActivity] = useState(false);
+  const [error, setError] = useState("");
+  const [planned, setPlanned] = useState(date);
+  const [workoutId, setWorkoutId] = useState("");
+  const plan = visible(model.docs, "plan")[0]?.payload as Plan | undefined;
+  const selected =
+    plan?.workouts.find((w) => w.id === workoutId) ||
+    plannedWorkout(plan, date) ||
+    plan?.workouts[0];
+  const start = new Date(month + "-01T12:00:00Z");
+  const offset = (start.getUTCDay() + 6) % 7;
+  const count = new Date(
+    start.getUTCFullYear(),
+    start.getUTCMonth() + 1,
+    0,
+  ).getDate();
+  const sessions = visible(model.docs, "session");
+  const activities = visible(model.docs, "activity");
+  const shift = (n: number) => {
+    const d = new Date(month + "-15T12:00:00Z");
+    d.setUTCMonth(d.getUTCMonth() + n);
+    setMonth(d.toISOString().slice(0, 7));
+  };
+  return (
+    <>
+      <div className="page-title">
+        <h1>Agenda</h1>
+        <button
+          className="secondary"
+          onClick={() => {
+            setDate(todayKey());
+            setMonth(todayKey().slice(0, 7));
+          }}
+        >
+          Hoje
+        </button>
+      </div>
+      <div className="calendar-panel">
+        <div className="month-title">
+          <button
+            className="icon"
+            aria-label="Mês anterior"
+            onClick={() => shift(-1)}
+          >
+            <ChevronLeft />
+          </button>
+          <h2>
+            {start.toLocaleDateString("pt-BR", {
+              month: "long",
+              year: "numeric",
+              timeZone: "UTC",
+            })}
+          </h2>
+          <button
+            className="icon"
+            aria-label="Próximo mês"
+            onClick={() => shift(1)}
+          >
+            <ChevronRight />
+          </button>
+        </div>
+        <div className="calendar-grid">
+          {["S", "T", "Q", "Q", "S", "S", "D"].map((d, i) => (
+            <span className="day-label" key={i}>
+              {d}
+            </span>
+          ))}
+          {Array.from({ length: offset }, (_, i) => (
+            <span key={"blank" + i} />
+          ))}
+          {Array.from({ length: count }, (_, i) => {
+            const d = month + "-" + String(i + 1).padStart(2, "0");
+            const done =
+              sessions.some(
+                (s) => s.payload.actualDate === d && s.payload.finishedAt,
+              ) || activities.some((a) => a.payload.date === d);
+            return (
+              <button
+                key={d}
+                className={d === date ? "selected" : ""}
+                onClick={() => {
+                  setDate(d);
+                  setPlanned(d);
+                }}
+              >
+                <b>{i + 1}</b>
+                <i
+                  className={
+                    done ? "trained" : plannedWorkout(plan, d) ? "planned" : ""
+                  }
+                />
+              </button>
+            );
+          })}
+        </div>
+        <p className="fine legend">
+          <i className="trained" /> Registrado <i className="planned" />{" "}
+          Previsto
+        </p>
+      </div>
+      <section className="calendar-detail">
+        <h2>{formatDate(date)}</h2>
+        <p className="muted">
+          {plannedWorkout(plan, date)?.name || "Dia livre na ficha"}
+        </p>
+        {sessions
+          .filter((s) => s.payload.actualDate === date)
+          .map((s) => (
+            <div className="agenda-row" key={s.id}>
+              <div>
+                <b>{s.payload.workout.name}</b>
+                <p>
+                  {s.payload.finishedAt ? "Concluído" : "Rascunho"} · previsto:{" "}
+                  {formatDate(s.payload.plannedDate)}
+                </p>
+                <label>
+                  Data realizada
+                  <input
+                    type="date"
+                    value={s.payload.actualDate}
+                    onChange={(e) =>
+                      e.target.value &&
+                      model
+                        .save(s.id, "session", {
+                          ...s.payload,
+                          actualDate: e.target.value,
+                        })
+                        .catch((e) => setError(e.message))
+                    }
+                  />
+                </label>
+              </div>
+              <button
+                className="icon"
+                aria-label="Abrir registro"
+                onClick={() => onOpen(s.id)}
+              >
+                <ArrowUpRight />
+              </button>
+            </div>
+          ))}
+        {activities
+          .filter((a) => a.payload.date === date)
+          .map((a) => (
+            <div className="agenda-row" key={a.id}>
+              <div>
+                <b>{a.payload.name}</b>
+                <p>
+                  {a.payload.minutes} min · {a.payload.notes}
+                </p>
+              </div>
+              <button
+                className="text-button"
+                onClick={() => {
+                  if (confirm("Excluir esta atividade?"))
+                    model
+                      .save(a.id, "activity", a.payload, true)
+                      .catch((e) => setError(e.message));
+                }}
+              >
+                Excluir
+              </button>
+            </div>
+          ))}
+        {selected && (
+          <div className="schedule-form">
+            <label>
+              Treino a realizar
+              <select
+                value={selected.id}
+                onChange={(e) => setWorkoutId(e.target.value)}
+              >
+                {plan?.workouts.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Data originalmente prevista
+              <input
+                type="date"
+                value={planned}
+                onChange={(e) => setPlanned(e.target.value)}
+              />
+            </label>
+            <button
+              className="primary"
+              onClick={() => onStart(selected, date, planned)}
+            >
+              Registrar neste dia <Plus size={18} />
+            </button>
+          </div>
+        )}
+        <button className="secondary" onClick={() => setActivity(true)}>
+          Adicionar cardio ou atividade <Plus size={18} />
+        </button>
+        {error && (
+          <p role="alert" className="error">
+            {error}
+          </p>
+        )}
+      </section>
+      {activity && (
+        <Sheet title="Nova atividade" onClose={() => setActivity(false)}>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const f = new FormData(e.currentTarget);
+              try {
+                await model.save(uid(), "activity", {
+                  date,
+                  name: String(f.get("name")),
+                  minutes: Number(f.get("minutes")),
+                  notes: String(f.get("notes")),
+                });
+                setActivity(false);
+              } catch (e) {
+                setError(String(e));
+              }
+            }}
+          >
+            <label>
+              Atividade
+              <input name="name" required placeholder="Caminhada, bicicleta…" />
+            </label>
+            <label>
+              Duração em minutos
+              <input
+                name="minutes"
+                type="number"
+                min="1"
+                max="1440"
+                required
+                inputMode="numeric"
+              />
+            </label>
+            <label>
+              Observação opcional
+              <textarea name="notes" />
+            </label>
+            <button className="primary">Salvar atividade</button>
+          </form>
+        </Sheet>
+      )}
+    </>
+  );
+}

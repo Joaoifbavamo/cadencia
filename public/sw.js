@@ -1,5 +1,66 @@
-const CACHE='cadencia-shell-v1';
-self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(['./','./manifest.webmanifest','./icons/apple-touch-icon.png'])))});
+const CACHE = "cadencia-shell-v1";
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches
+      .open(CACHE)
+      .then((cache) =>
+        cache.addAll([
+          "./",
+          "./manifest.webmanifest",
+          "./icons/apple-touch-icon.png",
+        ]),
+      ),
+  );
+});
 // No skipWaiting: an update activates only after old tabs close, protecting an ongoing workout.
-self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('cadencia-shell-')&&k!==CACHE).map(k=>caches.delete(k)))))});
-self.addEventListener('fetch',event=>{const url=new URL(event.request.url);if(event.request.method!=='GET'||url.origin!==self.location.origin||url.search||url.pathname.includes('/auth/')||url.pathname.includes('/rest/'))return;const shell=event.request.mode==='navigate'||url.pathname.includes('/assets/')||url.pathname.includes('/icons/')||url.pathname.endsWith('manifest.webmanifest');if(!shell)return;event.respondWith(fetch(event.request).then(response=>{if(response.ok){const clone=response.clone();caches.open(CACHE).then(c=>c.put(event.request,clone))}return response}).catch(()=>caches.match(event.request).then(r=>r||(event.request.mode==='navigate'?caches.match('./'):Response.error()))))});
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((k) => k.startsWith("cadencia-shell-") && k !== CACHE)
+            .map((k) => caches.delete(k)),
+        ),
+      ),
+  );
+});
+self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url);
+  if (
+    event.request.method !== "GET" ||
+    url.origin !== self.location.origin ||
+    url.search ||
+    url.pathname.includes("/auth/") ||
+    url.pathname.includes("/rest/")
+  )
+    return;
+  const shell =
+    event.request.mode === "navigate" ||
+    url.pathname.includes("/assets/") ||
+    url.pathname.includes("/icons/") ||
+    url.pathname.endsWith("manifest.webmanifest");
+  if (!shell) return;
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE).then((c) => c.put(event.request, clone));
+        }
+        return response;
+      })
+      .catch(() =>
+        caches
+          .match(event.request)
+          .then(
+            (r) =>
+              r ||
+              (event.request.mode === "navigate"
+                ? caches.match("./")
+                : Response.error()),
+          ),
+      ),
+  );
+});

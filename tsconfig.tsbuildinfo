@@ -1,1 +1,0 @@
-{"root":["./src/app.tsx","./src/auth.ts","./src/components.tsx","./src/demo.ts","./src/domain.ts","./src/main.tsx","./src/merge.ts","./src/model.ts","./src/storage.ts","./src/sync.ts","./src/screens/calendar.tsx","./src/screens/planeditor.tsx","./src/screens/progress.tsx","./src/screens/settings.tsx","./src/screens/today.tsx","./src/screens/workout.tsx"],"version":"5.9.3"}
