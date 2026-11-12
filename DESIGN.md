@@ -25,30 +25,30 @@ typography:
     fontFamily: '"Manrope Variable", Manrope, sans-serif'
     fontSize: "clamp(2rem, 3.3vw, 2.8rem)"
     fontWeight: 750
-    lineHeight: 1.13
+    lineHeight: "1.13"
     letterSpacing: "-0.035em"
   title:
     fontFamily: '"Manrope Variable", Manrope, sans-serif'
     fontSize: "1.25rem"
     fontWeight: 750
-    lineHeight: 1.3
+    lineHeight: "1.3"
     letterSpacing: "-0.025em"
   body:
     fontFamily: '"Manrope Variable", Manrope, sans-serif'
     fontSize: "16px"
-    lineHeight: 1.6
+    lineHeight: "1.6"
   label:
     fontSize: "0.83rem"
     fontWeight: 650
   exercise-mobile:
     fontSize: "2rem"
     fontWeight: 750
-    lineHeight: 1.16
+    lineHeight: "1.16"
     letterSpacing: "-0.035em"
   series-number-mobile:
     fontSize: "2.6rem"
     fontWeight: 600
-    lineHeight: 1.1
+    lineHeight: "1.1"
     letterSpacing: "-0.025em"
 rounded:
   square: "0"
