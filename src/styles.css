@@ -2684,3 +2684,92 @@ th {
     box-shadow: none;
   }
 }
+/* Glisse owns the optical layer. Keep navigation semantics and an opaque accessibility fallback. */
+:root {
+  --lg-fill: var(--ink);
+  --lg-foreground: var(--ink);
+  --lg-muted: var(--muted);
+}
+.bottom-nav.glisse-nav {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.glisse-nav .lg-tab-bar {
+  width: 100%;
+  --lg-tab-width: calc((100vw - 32px) / 5);
+  --lg-tab-height: 52px;
+  --lg-glass-dispersion: 0;
+  font-family: inherit;
+}
+.glisse-nav .lg-tab {
+  flex: none;
+  min-height: 52px;
+  min-width: 0;
+  padding: 0;
+  border-radius: 26px;
+  transform: none;
+}
+.glisse-nav .lg-tab-face {
+  display: contents;
+}
+.glisse-nav .lg-tab-text {
+  font-size: 10px;
+}
+.glisse-nav .lg-tab-copy {
+  font-family: inherit;
+}
+.change-workout {
+  white-space: nowrap;
+  font: inherit;
+  font-size: 0.8125rem;
+  flex-shrink: 0;
+  --lg-glass-dispersion: 0;
+  color: var(--ink);
+}
+.change-workout svg {
+  width: 16px;
+  height: 16px;
+}
+.workout-card-heading .change-workout {
+  margin-top: 0;
+}
+.paused-workouts {
+  margin: 0 0 24px;
+}
+.paused-workouts > summary {
+  padding: 12px 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.paused-workouts > summary > span {
+  margin-left: 8px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+@media (max-width: 760px) {
+  .today-workout .workout-card-heading {
+    flex-wrap: wrap;
+  }
+  .today-workout .workout-card-heading h2 {
+    flex: 1;
+    min-width: 140px;
+  }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .change-workout {
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    box-shadow: none;
+    --lg-filter: none;
+    --lg-blur: 0px;
+  }
+  .change-workout::before,
+  .change-workout::after {
+    display: none;
+  }
+}
+.change-workout { min-height:44px; padding-inline:14px; }

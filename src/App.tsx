@@ -1,3 +1,4 @@
+import MobileNavigation from "./MobileNavigation.tsx";
 import { useEffect, useRef, useState } from "react";
 import {
   CalendarDays,
@@ -21,6 +22,8 @@ import {
   visible,
   validPayload,
   snapshotSession,
+  findResumableSession,
+  todayKey,
   type Entity,
   type Kind,
   type Profile,
@@ -181,13 +184,35 @@ export default function App() {
     refresh();
     void engine.current?.run();
   }
+  const starting = useRef(false);
   async function start(w: W, actual: string, planned: string) {
+    if (starting.current) return;
+    starting.current = true;
     try {
       const plan = visible(store.current!.docs, "plan")[0]?.payload;
       if (!plan) throw Error("Crie ou importe sua ficha.");
-      const existing = visible(store.current!.docs, "session").find(
-        (d) => !d.payload.finishedAt,
-      );
+      if (!w.exercises.length)
+        throw Error(
+          "Este treino está vazio. Adicione exercícios em Meu treino antes de começar.",
+        );
+      const existing = findResumableSession(store.current!.docs, w.id, actual);
+      if (actual === todayKey(new Date(), model.profile.timezone)) {
+        const currentProfile = visible(store.current!.docs, "profile")[0];
+        const payload = currentProfile?.payload ?? defaults;
+        const choice = {
+          date: actual,
+          workoutId: w.id,
+          plannedDate: existing?.payload.plannedDate ?? planned,
+        };
+        if (JSON.stringify(payload.todayChoice) !== JSON.stringify(choice))
+          await save(
+            currentProfile?.id ?? uid(),
+            "profile",
+            { ...payload, todayChoice: choice },
+            false,
+            currentProfile ? JSON.stringify(payload) : null,
+          );
+      }
       if (existing) {
         setSessionId(existing.id);
         return;
@@ -197,6 +222,8 @@ export default function App() {
       setSessionId(s.id);
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      starting.current = false;
     }
   }
   async function logout() {
@@ -390,12 +417,15 @@ export default function App() {
           </div>
         )}
         <UpdateNotice defer={Boolean(sessionId) || tab === "Meu treino"} />
-        <main>
+        <main data-glisse-backdrop>
           {sessionId ? (
             <Workout
               model={model}
               sessionId={sessionId}
-              onClose={() => setSessionId(null)}
+              onClose={() => {
+                setSessionId(null);
+                setTab("Hoje");
+              }}
             />
           ) : tab === "Hoje" ? (
             <Today
@@ -425,22 +455,14 @@ export default function App() {
           Cadência · o próximo registro é seu.
         </footer>
       </div>
-      <nav className="bottom-nav" aria-label="Navegação principal">
-        {nav.map((n) => (
-          <button
-            key={n.name}
-            className={tab === n.name && !sessionId ? "active" : ""}
-            aria-current={tab === n.name && !sessionId ? "page" : undefined}
-            onClick={() => {
-              setTab(n.name);
-              setSessionId(null);
-            }}
-          >
-            <n.icon size={22} />
-            <span>{n.name}</span>
-          </button>
-        ))}
-      </nav>
+      <MobileNavigation
+        items={nav.map((n) => ({ name: n.name, icon: <n.icon size={22} /> }))}
+        value={sessionId ? null : tab}
+        onChange={(name) => {
+          setTab(name);
+          setSessionId(null);
+        }}
+      />
       {error && (
         <Sheet title="Não foi possível continuar" onClose={() => setError("")}>
           <p role="alert">{error}</p>
@@ -452,8 +474,8 @@ export default function App() {
       {welcome && (
         <Sheet title="Bem-vindo ao Cadência" onClose={() => setWelcome(false)}>
           <p>
-            Importe sua ficha pessoal em Ajustes → Importar ficha. Antes do
-            primeiro treino, confirme o peso da barra usada na academia.
+            Confira sua ficha em Meu treino. Antes do primeiro treino, confirme
+            o peso da barra usada na academia.
           </p>
           <button
             className="primary"

@@ -41,3 +41,13 @@ Revisão independente desta simplificação: ship, sem correções materiais, co
 - Edge v5: saúde 200/encryptionReady com autorização, 401 sem. Não enviamos teste real ao aparelho; entrega física continua não verificada.
 - Revisão independente: ship, sem problemas materiais nas fontes, SQL e capturas. Detector único: somente 111 avisos consultivos de rampa de tipos/raios/cores, incluindo valores anteriores. Vidro funcional e raios novos são escolhas solicitadas e documentadas.
 - Avisos Supabase permanecem os dois já documentados (pg_net e proteção opcional de senhas); nenhuma nova exposição de tabelas ou segredo foi criada.
+
+## Glisse e revisão de usabilidade — 13/11/2026
+
+- 30 testes Node passaram. Novos testes cobrem correspondência de treino/data, primeiro exercício incompleto e validação da escolha do dia.
+- Navegador isolado com movimento normal verificou Glisse real, troca com sessão iniciada, preservação de 30 kg × 8 na sessão anterior, escolha após recarregar, datas, edição de cardio sem duplicação, seleção limpa na Agenda e larguras 320–1440. Movimento reduzido/contraste usam alternativa estática.
+- Revisão independente: ship, sem problemas materiais; revisão direcionada adicional confirmou CAS e coerência entre Hoje e Agenda. Sessões antigas mantêm seus snapshots.
+- Detector executado uma vez, 112 avisos consultivos de rampa de tamanhos/raios/cores, sem falha bloqueante; componentes/raios do Glisse são intencionais.
+- Auditoria completa npm: zero vulnerabilidades após Vite 7.3.8. Não houve migração de banco, acesso a novos segredos nem mudança de permissões. Teste físico de óptica/movimento no Safari do iPhone continua não realizado.
+
+O botão Voltar para hoje e a finalização agora realmente abrem Hoje, inclusive quando a sessão começou pela Agenda; o teste de regressão cobre esse caminho.

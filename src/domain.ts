@@ -55,6 +55,7 @@ export interface Profile {
   barWeight: number | null;
   increment: number;
   timezone: string;
+  todayChoice?: { date: string; workoutId: string; plannedDate: string };
 }
 export type Kind =
   | "plan"
@@ -293,6 +294,12 @@ export function validPayload(kind: Kind, p: any): boolean {
       );
     case "profile":
       return (
+        (p.todayChoice === undefined ||
+          (dateValid(p.todayChoice.date) &&
+            dateValid(p.todayChoice.plannedDate) &&
+            typeof p.todayChoice.workoutId === "string" &&
+            p.todayChoice.workoutId.length > 0 &&
+            p.todayChoice.workoutId.length <= 200)) &&
         (p.barWeight === null || (p.barWeight > 0 && p.barWeight <= 100)) &&
         p.increment > 0 &&
         p.increment <= 100 &&
@@ -415,4 +422,29 @@ export function cleanupCandidates(docs: Entity[], before: string) {
         (d.kind === "set" && ids.has(d.payload.sessionId)) ||
         (d.kind === "activity" && d.payload.date < before)),
   );
+}
+
+export function findResumableSession(
+  docs: Entity[],
+  workoutId: string,
+  date: string,
+) {
+  return visible(docs, "session").find(
+    (d) =>
+      !d.payload.finishedAt &&
+      d.payload.actualDate === date &&
+      d.payload.workout.id === workoutId,
+  );
+}
+export function firstPendingExerciseIndex(session: Session, docs: Entity[]) {
+  if (session.finishedAt) return 0;
+  const sets = visible(docs, "set").filter(
+    (d) => d.payload.sessionId === session.id,
+  );
+  const index = session.workout.exercises.findIndex(
+    (e) =>
+      !session.skipped[e.id] &&
+      sets.filter((s) => s.payload.exerciseId === e.id).length < e.sets,
+  );
+  return index < 0 ? Math.max(0, session.workout.exercises.length - 1) : index;
 }

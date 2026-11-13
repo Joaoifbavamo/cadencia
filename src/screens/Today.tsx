@@ -1,3 +1,4 @@
+import { Button as GlassButton } from "glisse";
 import { useState } from "react";
 import { ArrowRight, Play, Check, Plus, ChevronDown } from "lucide-react";
 import type { Model } from "../model.ts";
@@ -7,6 +8,8 @@ import {
   visible,
   type Plan,
   type Workout,
+  uid,
+  findResumableSession,
 } from "../domain.ts";
 import { formatDate, Sheet } from "../components.tsx";
 export default function Today({
@@ -25,12 +28,53 @@ export default function Today({
   const date = todayKey(new Date(), model.profile.timezone);
   const plan = visible(model.docs, "plan")[0]?.payload as Plan | undefined;
   const scheduled = plannedWorkout(plan, date);
-  const [choice, setChoice] = useState("");
   const [choose, setChoose] = useState(false);
-  const selected = plan?.workouts.find((w) => w.id === choice) || scheduled;
-  const draft = visible(model.docs, "session").find(
-    (s) => !s.payload.finishedAt,
-  );
+  const profileDoc = visible(model.docs, "profile")[0];
+  const choice =
+    model.profile.todayChoice?.date === date
+      ? model.profile.todayChoice
+      : undefined;
+  const drafts = visible(model.docs, "session")
+    .filter((s) => !s.payload.finishedAt)
+    .sort((a, b) => b.payload.startedAt.localeCompare(a.payload.startedAt));
+  const selected =
+    plan?.workouts.find((w) => w.id === choice?.workoutId) ||
+    drafts.find((s) => s.payload.actualDate === date)?.payload.workout ||
+    scheduled;
+  const draft = findResumableSession(model.docs, selected?.id ?? "", date);
+  const displayWorkout = draft?.payload.workout ?? selected;
+  const plannedDate =
+    draft?.payload.plannedDate ??
+    (choice && choice.workoutId === selected?.id ? choice.plannedDate : date);
+  const [planned, setPlanned] = useState(plannedDate);
+  const [choosing, setChoosing] = useState(false),
+    [choiceError, setChoiceError] = useState("");
+  const openChoice = () => {
+    setPlanned(plannedDate);
+    setChoiceError("");
+    setChoose(true);
+  };
+  const chooseWorkout = async (w: Workout) => {
+    setChoosing(true);
+    setChoiceError("");
+    try {
+      await model.save(
+        profileDoc?.id ?? uid(),
+        "profile",
+        {
+          ...model.profile,
+          todayChoice: { date, workoutId: w.id, plannedDate: planned },
+        },
+        false,
+        profileDoc ? JSON.stringify(profileDoc.payload) : null,
+      );
+      setChoose(false);
+    } catch (e) {
+      setChoiceError((e as Error).message);
+    } finally {
+      setChoosing(false);
+    }
+  };
   const done = visible(model.docs, "session").filter(
     (s) => s.payload.actualDate === date && s.payload.finishedAt,
   );
@@ -43,7 +87,14 @@ export default function Today({
     const completed = visible(model.docs, "session").filter(
       (s) => s.payload.actualDate === key && s.payload.finishedAt,
     ).length;
-    return { key, day, completed, planned: Boolean(plannedWorkout(plan, key)) };
+    return {
+      key,
+      day,
+      completed,
+      planned: Boolean(
+        plannedWorkout(plan, key) || (key === date && (choice || draft)),
+      ),
+    };
   });
   const weekCount = week.reduce((n, d) => n + d.completed, 0);
   const draftSets = draft
@@ -73,7 +124,12 @@ export default function Today({
           <div className="workout-state">
             <span className="state-dot" /> Em andamento
           </div>
-          <h2>{draft.payload.workout.name}</h2>
+          <div className="workout-card-heading">
+            <h2>{draft.payload.workout.name}</h2>
+            <GlassButton className="change-workout" onClick={openChoice}>
+              Trocar treino <ChevronDown size={16} />
+            </GlassButton>
+          </div>
           <p>{draftSets} séries registradas · continue de onde parou</p>
           <button
             className="primary start-workout"
@@ -86,16 +142,19 @@ export default function Today({
         <section className="today-workout">
           <div className="workout-card-heading">
             <h2>{selected.name}</h2>
-            <button className="text-button" onClick={() => setChoose(true)}>
-              Trocar <ChevronDown size={16} />
-            </button>
+            <GlassButton className="change-workout" onClick={openChoice}>
+              Trocar treino <ChevronDown size={16} />
+            </GlassButton>
           </div>
           <p>{selected.exercises.length} exercícios</p>
           <button
             className="primary start-workout"
-            onClick={() => onStart(selected, date, date)}
+            onClick={() => onStart(selected, date, plannedDate)}
           >
-            <Play size={18} /> Começar treino
+            <Play size={18} />{" "}
+            {done.some((s) => s.payload.workout.id === selected.id)
+              ? "Treinar novamente"
+              : "Começar treino"}
           </button>
         </section>
       ) : (
@@ -108,7 +167,7 @@ export default function Today({
           </p>
           <button
             className="primary start-workout"
-            onClick={() => (plan ? setChoose(true) : onPlan())}
+            onClick={() => (plan ? openChoice() : onPlan())}
           >
             {plan ? "Escolher um treino" : "Criar meu treino"}
             <Plus size={18} />
@@ -119,6 +178,37 @@ export default function Today({
             </button>
           )}
         </section>
+      )}
+      {drafts.some((s) => s.id !== draft?.id) && (
+        <details className="paused-workouts">
+          <summary>
+            Treinos pausados{" "}
+            <span>{drafts.filter((s) => s.id !== draft?.id).length}</span>
+          </summary>
+          {drafts
+            .filter((s) => s.id !== draft?.id)
+            .map((s) => (
+              <button
+                key={s.id}
+                className="workout-choice"
+                onClick={() => onResume(s.id)}
+              >
+                <div>
+                  <b>{s.payload.workout.name}</b>
+                  <span>
+                    {formatDate(s.payload.actualDate)} · retomar sem perder
+                    registros
+                  </span>
+                </div>
+                <ArrowRight size={18} />
+              </button>
+            ))}
+        </details>
+      )}
+      {plannedDate !== date && (
+        <p className="fine">
+          Treino originalmente previsto para {formatDate(plannedDate)}.
+        </p>
       )}
       <section className="home-week" aria-label="Sua semana de treino">
         <div>
@@ -167,25 +257,28 @@ export default function Today({
           ))}
         </ol>
       </section>
-      {selected && (
+      {displayWorkout && (
         <section className="today-exercises">
           <details>
             <summary>
-              Exercícios do treino <span>{selected.exercises.length}</span>
+              Exercícios do treino{" "}
+              <span>{displayWorkout.exercises.length}</span>
             </summary>
             <div>
-              {selected.exercises.map((e, i) => (
-                <div className="preview-row" key={e.id}>
-                  <span className="row-order">{i + 1}</span>
-                  <div>
-                    <h3>{e.name}</h3>
-                    <p>
-                      {e.sets} × {e.min}–{e.max} reps · RIR {e.rir} ·{" "}
-                      {e.rest >= 120 ? e.rest / 60 + " min" : e.rest + " s"}
-                    </p>
+              {displayWorkout.exercises.map(
+                (e: import("../domain.ts").Exercise, i: number) => (
+                  <div className="preview-row" key={e.id}>
+                    <span className="row-order">{i + 1}</span>
+                    <div>
+                      <h3>{e.name}</h3>
+                      <p>
+                        {e.sets} × {e.min}–{e.max} reps · RIR {e.rir} ·{" "}
+                        {e.rest >= 120 ? e.rest / 60 + " min" : e.rest + " s"}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ),
+              )}
               <p className="time-note">
                 Reserve até 45 min, incluindo aquecimento. O tempo real depende
                 das pausas e da academia.
@@ -217,18 +310,30 @@ export default function Today({
       {choose && (
         <Sheet title="Qual treino vai fazer?" onClose={() => setChoose(false)}>
           <p>
-            Você pode escolher um treino de outro dia. Para definir também a
-            data originalmente prevista, use a Agenda.
+            A escolha vale só para hoje e sincroniza com sua conta. Trocar não
+            apaga séries nem altera sua divisão semanal.
           </p>
+          <label>
+            Data originalmente prevista
+            <input
+              type="date"
+              value={planned}
+              onChange={(e) => setPlanned(e.target.value)}
+              required
+            />
+          </label>
+          {choiceError && (
+            <p className="error" role="alert">
+              {choiceError}
+            </p>
+          )}
           <div className="workout-choices">
             {plan?.workouts.map((w) => (
               <button
                 key={w.id}
                 className="workout-choice"
-                onClick={() => {
-                  setChoice(w.id);
-                  setChoose(false);
-                }}
+                disabled={choosing || !planned}
+                onClick={() => void chooseWorkout(w)}
               >
                 <div>
                   <b>{w.name}</b>

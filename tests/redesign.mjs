@@ -43,7 +43,7 @@ if (
 await page.getByRole("button", { name: "Claro", exact: true }).click();
 await page.getByRole("button", { name: "Conhecer a demonstração" }).click();
 await page.getByRole("heading", { name: "Treino de hoje" }).waitFor();
-await page.getByRole("button", { name: "Escolher um treino" }).click();
+if(await page.getByRole("button",{name:"Escolher um treino",exact:true}).isVisible())await page.getByRole("button",{name:"Escolher um treino",exact:true}).click();else await page.getByRole("button",{name:"Trocar treino",exact:true}).click();
 await page.getByRole("button", { name: /Superior · exemplo/ }).click();
 await shot(page, "iphone-light-today");
 await page.getByRole("button", { name: "Começar treino" }).click();
@@ -93,8 +93,8 @@ await page
 await page.getByRole("button", { name: "Ajustes", exact: true }).last().click();
 await page.getByRole("button", { name: "Escuro", exact: true }).click();
 await shot(page, "iphone-dark-settings");
-await page.getByRole("button", { name: "Hoje", exact: true }).last().click();
-await page.getByRole("button", { name: "Escolher um treino" }).click();
+await page.getByRole("button", {name:"Hoje",exact:true}).or(page.getByRole("tab", {name:"Hoje",exact:true})).last().click();
+if(await page.getByRole("button",{name:"Escolher um treino",exact:true}).isVisible())await page.getByRole("button",{name:"Escolher um treino",exact:true}).click();else await page.getByRole("button",{name:"Trocar treino",exact:true}).click();
 await page.getByRole("button", { name: /Superior · exemplo/ }).click();
 await shot(page, "iphone-dark-today");
 await page.getByRole("button", { name: "Ver séries", exact: true }).click();
@@ -102,8 +102,7 @@ await shot(page, "iphone-dark-workout");
 await page.setViewportSize({ width: 1440, height: 1000 });
 await shot(page, "desktop-dark-workout");
 await page.getByRole("button", { name: "Voltar para hoje" }).click();
-await page
-  .getByRole("button", { name: "Evolução", exact: true })
+await page.getByRole("button", {name:"Evolução",exact:true}).or(page.getByRole("tab", {name:"Evolução",exact:true}))
   .first()
   .click();
 await page.getByRole("heading", { name: "Histórico de séries" }).waitFor();
@@ -112,7 +111,7 @@ await page
   .first()
   .click();
 await page.getByRole("button", { name: "Claro", exact: true }).click();
-await page.getByRole("button", { name: "Hoje", exact: true }).first().click();
+await page.getByRole("button", {name:"Hoje",exact:true}).or(page.getByRole("tab", {name:"Hoje",exact:true})).first().click();
 await shot(page, "desktop-light-today");
 const overflow = await page.evaluate(
   () => document.documentElement.scrollWidth > innerWidth,

@@ -8,6 +8,7 @@ import {
   uid,
   type Plan,
   type Workout,
+  type Entity,
 } from "../domain.ts";
 import { Sheet, formatDate } from "../components.tsx";
 export default function Calendar({
@@ -23,11 +24,28 @@ export default function Calendar({
   const [month, setMonth] = useState(date.slice(0, 7));
   const [activity, setActivity] = useState(false);
   const [error, setError] = useState("");
-  const [planned, setPlanned] = useState(date);
+  const [editing, setEditing] = useState<Entity>();
+  const [savingActivity, setSavingActivity] = useState(false);
+  const openActivity = (item?: Entity) => {
+    setEditing(item);
+    setError("");
+    setActivity(true);
+  };
+  const [planned, setPlanned] = useState(
+    model.profile.todayChoice?.date === date
+      ? model.profile.todayChoice.plannedDate
+      : date,
+  );
   const [workoutId, setWorkoutId] = useState("");
   const plan = visible(model.docs, "plan")[0]?.payload as Plan | undefined;
+  const chosenForDate = plan?.workouts.find(
+    (w) =>
+      model.profile.todayChoice?.date === date &&
+      w.id === model.profile.todayChoice.workoutId,
+  );
   const selected =
     plan?.workouts.find((w) => w.id === workoutId) ||
+    chosenForDate ||
     plannedWorkout(plan, date) ||
     plan?.workouts[0];
   const start = new Date(month + "-01T12:00:00Z");
@@ -39,6 +57,15 @@ export default function Calendar({
   ).getDate();
   const sessions = visible(model.docs, "session");
   const activities = visible(model.docs, "activity");
+  const selectDate = (next: string) => {
+    setDate(next);
+    setPlanned(
+      model.profile.todayChoice?.date === next
+        ? model.profile.todayChoice.plannedDate
+        : next,
+    );
+    setWorkoutId("");
+  };
   const shift = (n: number) => {
     const d = new Date(month + "-15T12:00:00Z");
     d.setUTCMonth(d.getUTCMonth() + n);
@@ -51,8 +78,8 @@ export default function Calendar({
         <button
           className="secondary"
           onClick={() => {
-            setDate(todayKey());
-            setMonth(todayKey().slice(0, 7));
+            selectDate(todayKey(new Date(), model.profile.timezone));
+            setMonth(todayKey(new Date(), model.profile.timezone).slice(0, 7));
           }}
         >
           Hoje
@@ -102,8 +129,7 @@ export default function Calendar({
                 key={d}
                 className={d === date ? "selected" : ""}
                 onClick={() => {
-                  setDate(d);
-                  setPlanned(d);
+                  selectDate(d);
                 }}
               >
                 <b>{i + 1}</b>
@@ -124,7 +150,9 @@ export default function Calendar({
       <section className="calendar-detail">
         <h2>{formatDate(date)}</h2>
         <p className="muted">
-          {plannedWorkout(plan, date)?.name || "Dia livre na ficha"}
+          {chosenForDate?.name ||
+            plannedWorkout(plan, date)?.name ||
+            "Dia livre na ficha"}
         </p>
         {sessions
           .filter((s) => s.payload.actualDate === date)
@@ -141,15 +169,39 @@ export default function Calendar({
                   <input
                     type="date"
                     value={s.payload.actualDate}
-                    onChange={(e) =>
-                      e.target.value &&
-                      model
-                        .save(s.id, "session", {
+                    onChange={async (e) => {
+                      const next = e.currentTarget.value;
+                      if (!next) return;
+                      try {
+                        await model.save(s.id, "session", {
                           ...s.payload,
-                          actualDate: e.target.value,
-                        })
-                        .catch((e) => setError(e.message))
-                    }
+                          actualDate: next,
+                        });
+                        selectDate(next);
+                        setMonth(next.slice(0, 7));
+                      } catch (error) {
+                        setError((error as Error).message);
+                      }
+                    }}
+                  />
+                </label>
+                <label>
+                  Data originalmente prevista
+                  <input
+                    type="date"
+                    value={s.payload.plannedDate}
+                    onChange={async (e) => {
+                      const next = e.currentTarget.value;
+                      if (!next) return;
+                      try {
+                        await model.save(s.id, "session", {
+                          ...s.payload,
+                          plannedDate: next,
+                        });
+                      } catch (error) {
+                        setError((error as Error).message);
+                      }
+                    }}
                   />
                 </label>
               </div>
@@ -182,6 +234,9 @@ export default function Calendar({
                 }}
               >
                 Excluir
+              </button>
+              <button className="text-button" onClick={() => openActivity(a)}>
+                Editar atividade
               </button>
             </div>
           ))}
@@ -216,7 +271,7 @@ export default function Calendar({
             </button>
           </div>
         )}
-        <button className="secondary" onClick={() => setActivity(true)}>
+        <button className="secondary" onClick={() => openActivity()}>
           Adicionar cardio ou atividade <Plus size={18} />
         </button>
         {error && (
@@ -226,32 +281,45 @@ export default function Calendar({
         )}
       </section>
       {activity && (
-        <Sheet title="Nova atividade" onClose={() => setActivity(false)}>
+        <Sheet
+          title={editing ? "Editar atividade" : "Nova atividade"}
+          onClose={() => setActivity(false)}
+        >
           <form
             onSubmit={async (e) => {
               e.preventDefault();
+              if (savingActivity) return;
               const f = new FormData(e.currentTarget);
+              setSavingActivity(true);
               try {
-                await model.save(uid(), "activity", {
+                await model.save(editing?.id ?? uid(), "activity", {
                   date,
-                  name: String(f.get("name")),
+                  name: String(f.get("name")).trim(),
                   minutes: Number(f.get("minutes")),
                   notes: String(f.get("notes")),
                 });
                 setActivity(false);
               } catch (e) {
-                setError(String(e));
+                setError((e as Error).message);
+              } finally {
+                setSavingActivity(false);
               }
             }}
           >
             <label>
               Atividade
-              <input name="name" required placeholder="Caminhada, bicicleta…" />
+              <input
+                name="name"
+                defaultValue={editing?.payload.name ?? ""}
+                required
+                placeholder="Caminhada, bicicleta…"
+              />
             </label>
             <label>
               Duração em minutos
               <input
                 name="minutes"
+                defaultValue={editing?.payload.minutes ?? ""}
                 type="number"
                 min="1"
                 max="1440"
@@ -261,9 +329,19 @@ export default function Calendar({
             </label>
             <label>
               Observação opcional
-              <textarea name="notes" />
+              <textarea
+                name="notes"
+                defaultValue={editing?.payload.notes ?? ""}
+              />
             </label>
-            <button className="primary">Salvar atividade</button>
+            {error && (
+              <p className="error" role="alert">
+                {error}
+              </p>
+            )}
+            <button className="primary" disabled={savingActivity}>
+              {savingActivity ? "Salvando…" : "Salvar atividade"}
+            </button>
           </form>
         </Sheet>
       )}

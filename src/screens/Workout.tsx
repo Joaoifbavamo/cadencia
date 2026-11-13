@@ -19,6 +19,7 @@ import {
   latestSet,
   warmup,
   unitLabel,
+  firstPendingExerciseIndex,
 } from "../domain.ts";
 import { Sheet } from "../components.tsx";
 import { scheduleRest, foregroundRest } from "../notifications.ts";
@@ -33,7 +34,9 @@ export default function Workout({
   onClose: () => void;
 }) {
   const session: Session = model.docs.find((d) => d.id === sessionId)!.payload;
-  const [index, setIndex] = useState(0),
+  const [index, setIndex] = useState(() =>
+      firstPendingExerciseIndex(session, model.docs),
+    ),
     [error, setError] = useState(""),
     [finish, setFinish] = useState(false),
     [skip, setSkip] = useState(false),

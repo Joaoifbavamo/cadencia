@@ -55,3 +55,13 @@ Ajustes → Notificações → Mensagens motivacionais: até três horários dis
 Migração aditiva `supabase/motivation.sql`: preferências na inscrição protegida por RLS, limite no banco, deduplicação por data/horário, lease e expiração mantidos; agendador continua privado, sem novos acessos ao Vault. Aplicada ao projeto; não reaplique. Edge cadencia-push versão 5 usa a mesma função de mensagens do cliente (cópia versionada em seu diretório). Mensagens motivacionais iniciam desligadas e não leem a ficha pessoal.
 
 Liquid Glass é uma adaptação web para navegação/cabeçalho/diálogos móveis, com fallback sólido por suporte e preferências de acessibilidade. O conteúdo permanece opaco. A tela inicial mostra a semana real; não inventa sequência ou treino concluído.
+
+## Trocar treino e Glisse — 13/11/2026
+
+O botão **Trocar treino** aparece em Hoje inclusive com sessão iniciada. Escolha outro treino e, se necessário, a data originalmente prevista. A escolha vale somente para a data atual, salva localmente e sincroniza no perfil; a divisão semanal permanece igual. Treinos em aberto de outro dia/tipo não bloqueiam novos registros e ficam em **Treinos pausados**. Retomar abre o primeiro exercício ainda incompleto. A lista de exercícios usa a ficha original da sessão em andamento. Começar pela Agenda também atualiza a escolha de hoje.
+
+Agenda permite corrigir as datas realizada e prevista e editar cardio usando o mesmo registro. Mudar o dia limpa a seleção anterior; erros da atividade aparecem dentro do formulário. Inícios repetidos são protegidos contra toque duplo.
+
+Glisse **0.6.0**, instalado do npm oficial, fornece a barra móvel TabBar e o botão de troca; o conteúdo sob o vidro é marcado pelo mecanismo documentado da biblioteca. A cor de destaque herda o preto/branco. Movimento/transparência reduzidos ou maior contraste usam navegação estática; não aplicamos vidro aos campos de séries. Licença MIT entregue em public/Glisse-LICENSE.txt. Fonte: https://glisse.kelvinzhang.ca/ e https://github.com/0kzh/glisse. Vite atualizado para 7.3.8 após auditoria identificar avisos na ferramenta de desenvolvimento; auditoria completa sem vulnerabilidades após a atualização.
+
+O botão Voltar para hoje e a finalização agora realmente abrem Hoje, inclusive quando a sessão começou pela Agenda; o teste de regressão cobre esse caminho.
