@@ -1,4 +1,7 @@
 import MobileNavigation from "./MobileNavigation.tsx";
+import { parseRoute, routeHash, type AppRoute } from "./router.ts";
+import { clearEditorDraft } from "./editor-draft.ts";
+import { singletonIdentity } from "./singleton.ts";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CalendarDays,
@@ -18,7 +21,6 @@ import { supabase } from "./auth.ts";
 import { LocalStore } from "./storage.ts";
 import { SyncEngine } from "./sync.ts";
 import {
-  uid,
   visible,
   validPayload,
   snapshotSession,
@@ -61,10 +63,15 @@ export default function App() {
   const [account, setAccount] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(false);
+  const [singletonIds, setSingletonIds] = useState<Model["singletonIds"]>();
   const [, render] = useState(0);
-  const [tab, setTab] = useState("Hoje");
+  const [tab, setTab] = useState(
+    () => parseRoute(location.hash)?.tab ?? "Hoje",
+  );
   const [planDirty, setPlanDirty] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(
+    () => parseRoute(location.hash)?.sessionId ?? null,
+  );
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState<Entity | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
@@ -74,6 +81,14 @@ export default function App() {
   const [welcome, setWelcome] = useState(false);
   const store = useRef<LocalStore | null>(null);
   const engine = useRef<SyncEngine | null>(null);
+  const navigationRef = useRef({ tab, sessionId, planDirty, account });
+  navigationRef.current = { tab, sessionId, planDirty, account };
+  const focusNavigation = useRef(false);
+  const arrowNavigation = useRef(false);
+  const historyPosition = useRef<number>(
+    history.state?.cadenciaRouteIndex ?? 0,
+  );
+  const restoringPosition = useRef(false);
   const refresh = () => render((n) => n + 1);
   useEffect(() => {
     let alive = true;
@@ -111,12 +126,17 @@ export default function App() {
     const start = async () => {
       try {
         local = await new LocalStore(account).open();
+        const [profile, plan] = await Promise.all([
+          singletonIdentity(account, "profile"),
+          singletonIdentity(account, "plan"),
+        ]);
         local.onChange = changed;
         if (cancelled) {
           local.close();
           return;
         }
         store.current = local;
+        setSingletonIds({ profile, plan });
         if (account === "demo" && !visible(local.docs, "plan").length)
           await local.mutate(demoPlan.id, "plan", demoPlan);
         if (cancelled) return;
@@ -142,7 +162,9 @@ export default function App() {
             .subscribe();
       } catch (e) {
         setError(
-          "Não foi possível abrir o armazenamento deste navegador. Confira se há espaço e tente novamente.",
+          e instanceof Error && e.message.startsWith("Feche outras abas")
+            ? e.message
+            : "Não foi possível abrir o armazenamento deste navegador. Confira se há espaço e tente novamente.",
         );
       }
     };
@@ -173,8 +195,105 @@ export default function App() {
     };
   }, [account]);
   useEffect(() => {
+    if (!location.hash.includes("type=recovery"))
+      history.replaceState(
+        { ...history.state, cadenciaRouteIndex: historyPosition.current },
+        "",
+      );
+    const key = (event: KeyboardEvent) => {
+      arrowNavigation.current =
+        ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key) &&
+        Boolean((event.target as Element)?.closest?.(".bottom-nav"));
+    };
+    const pointer = () => {
+      arrowNavigation.current = false;
+    };
+    const restore = () => {
+      if (location.hash.includes("type=recovery")) return;
+      const route = parseRoute(location.hash) ?? {
+        tab: "Hoje",
+        sessionId: null,
+      };
+      const current = navigationRef.current;
+      if (restoringPosition.current) {
+        if (route.tab === current.tab && route.sessionId === current.sessionId)
+          restoringPosition.current = false;
+        return;
+      }
+      if (route.tab === current.tab && route.sessionId === current.sessionId)
+        return;
+      if (
+        current.tab === "Meu treino" &&
+        current.planDirty &&
+        !confirm(
+          "Sua ficha tem alterações não salvas. Sair e descartar essas alterações?",
+        )
+      ) {
+        const incoming = history.state?.cadenciaRouteIndex;
+        if (
+          typeof incoming === "number" &&
+          incoming !== historyPosition.current
+        ) {
+          restoringPosition.current = true;
+          history.go(historyPosition.current - incoming);
+        } else {
+          history.replaceState(
+            { ...history.state, cadenciaRouteIndex: historyPosition.current },
+            "",
+            routeHash(current),
+          );
+        }
+        return;
+      }
+      if (current.planDirty && current.account)
+        clearEditorDraft(current.account);
+      setPlanDirty(false);
+      historyPosition.current =
+        history.state?.cadenciaRouteIndex ?? historyPosition.current + 1;
+      history.replaceState(
+        { ...history.state, cadenciaRouteIndex: historyPosition.current },
+        "",
+      );
+      focusNavigation.current = true;
+      setTab(route.tab);
+      setSessionId(route.sessionId);
+    };
+    window.addEventListener("popstate", restore);
+    window.addEventListener("hashchange", restore);
+    document.addEventListener("keydown", key, true);
+    document.addEventListener("pointerdown", pointer, true);
+    return () => {
+      window.removeEventListener("popstate", restore);
+      window.removeEventListener("hashchange", restore);
+      document.removeEventListener("keydown", key, true);
+      document.removeEventListener("pointerdown", pointer, true);
+    };
+  }, []);
+  useEffect(() => {
+    if (!ready) return;
     window.scrollTo({ top: 0 });
-  }, [tab, sessionId]);
+    if (!focusNavigation.current) return;
+    focusNavigation.current = false;
+    const heading = document.querySelector<HTMLElement>("main h1, main h2");
+    if (heading) {
+      heading.tabIndex = -1;
+      heading.focus({ preventScroll: true });
+    }
+  }, [tab, sessionId, ready]);
+  const openRoute = useCallback((route: AppRoute) => {
+    if (routeHash(route) !== location.hash) {
+      historyPosition.current += 1;
+      history.pushState(
+        { cadenciaRouteIndex: historyPosition.current },
+        "",
+        routeHash(route),
+      );
+    }
+    focusNavigation.current = !arrowNavigation.current;
+    setTab(route.tab);
+    setSessionId(route.sessionId);
+  }, []);
+  const openSession = (id: string) => openRoute({ tab: "Hoje", sessionId: id });
   const navigate = useCallback(
     (next: string) => {
       if (next === tab && !sessionId) return;
@@ -186,11 +305,11 @@ export default function App() {
         )
       )
         return;
+      if (planDirty && account) clearEditorDraft(account);
       setPlanDirty(false);
-      setTab(next);
-      setSessionId(null);
+      openRoute({ tab: next, sessionId: null });
     },
-    [tab, planDirty, sessionId],
+    [tab, planDirty, sessionId, account, openRoute],
   );
   async function importDocuments(input: unknown) {
     if (!store.current) throw Error("Armazenamento indisponível.");
@@ -255,7 +374,7 @@ export default function App() {
         };
         if (JSON.stringify(payload.todayChoice) !== JSON.stringify(choice))
           await save(
-            currentProfile?.id ?? uid(),
+            currentProfile?.id ?? singletonIds!.profile,
             "profile",
             { ...payload, todayChoice: choice },
             false,
@@ -263,12 +382,12 @@ export default function App() {
           );
       }
       if (existing) {
-        setSessionId(existing.id);
+        openSession(existing.id);
         return;
       }
       const s = snapshotSession(plan, w, actual, planned);
       await save(s.id, "session", s);
-      setSessionId(s.id);
+      openSession(s.id);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -298,6 +417,7 @@ export default function App() {
       store.current?.close();
       indexedDB.deleteDatabase("cadencia-" + old);
       localStorage.removeItem("cursor-" + old);
+      clearEditorDraft(old);
     }
   }
   if (loading)
@@ -313,7 +433,9 @@ export default function App() {
       <Login
         onDemo={() => {
           setAccount("demo");
-          setTab("Hoje");
+          const route = parseRoute(location.hash);
+          setTab(route?.tab ?? "Hoje");
+          setSessionId(route?.sessionId ?? null);
         }}
       />
     );
@@ -322,6 +444,11 @@ export default function App() {
       <div className="loading">
         <Mark />
         <p>{error || "Preparando seus registros…"}</p>
+        {error && (
+          <button className="secondary" onClick={() => location.reload()}>
+            Tentar novamente
+          </button>
+        )}
       </div>
     );
   const docs = [...store.current!.docs];
@@ -333,6 +460,30 @@ export default function App() {
     saveBatch,
     importDocuments,
     refresh,
+    singletonIds,
+    cleanup: {
+      job: store.current!.cleanupJob,
+      start: async (before, summaries) => {
+        await store.current!.createCleanup(before, summaries);
+        await store.current!.advanceCleanup(online || account === "demo");
+        refresh();
+        void engine.current?.run();
+      },
+      step: async () => {
+        await store.current!.advanceCleanup(online || account === "demo");
+        refresh();
+        void engine.current?.run();
+      },
+      cancel: async () => {
+        await store.current!.cancelCleanup();
+        refresh();
+      },
+      restore: async () => {
+        await store.current!.recoverCleanup();
+        refresh();
+        void engine.current?.run();
+      },
+    },
   };
   const dirty = docs.filter((d) => d.dirty).length;
   const conflicts = docs.filter((d) => d.conflict);
@@ -360,7 +511,6 @@ export default function App() {
           onClick={(e) => {
             e.preventDefault();
             navigate("Hoje");
-            setSessionId(null);
           }}
         >
           <Mark />
@@ -376,7 +526,6 @@ export default function App() {
               aria-current={tab === n.name && !sessionId ? "page" : undefined}
               onClick={() => {
                 navigate(n.name);
-                setSessionId(null);
               }}
             >
               <n.icon size={21} />
@@ -394,7 +543,6 @@ export default function App() {
             className={tab === "Ajustes" ? "active" : ""}
             onClick={() => {
               navigate("Ajustes");
-              setSessionId(null);
             }}
           >
             <SettingsIcon size={19} /> Ajustes
@@ -435,7 +583,6 @@ export default function App() {
             aria-label="Ajustes"
             onClick={() => {
               navigate("Ajustes");
-              setSessionId(null);
             }}
           >
             <SettingsIcon size={20} />
@@ -465,6 +612,7 @@ export default function App() {
           {sessionId ? (
             <Workout
               model={model}
+              accountKey={account}
               sessionId={sessionId}
               onClose={() => {
                 setSessionId(null);
@@ -475,16 +623,21 @@ export default function App() {
             <Today
               model={model}
               onStart={start}
-              onResume={setSessionId}
+              onResume={openSession}
               onPlan={() => navigate("Meu treino")}
               onAgenda={() => navigate("Agenda")}
             />
           ) : tab === "Agenda" ? (
-            <Calendar model={model} onStart={start} onOpen={setSessionId} />
+            <Calendar model={model} onStart={start} onOpen={openSession} />
           ) : tab === "Evolução" ? (
             <Progress model={model} />
           ) : tab === "Meu treino" ? (
-            <PlanEditor model={model} onDirtyChange={setPlanDirty} />
+            <PlanEditor
+              key={account}
+              accountKey={account}
+              model={model}
+              onDirtyChange={setPlanDirty}
+            />
           ) : tab === "Instalar" ? (
             <Install />
           ) : (

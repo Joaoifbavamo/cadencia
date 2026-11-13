@@ -1,12 +1,19 @@
 import { uid, type Entity, type Kind } from "./domain.ts";
 import { editEntity, acknowledge, mergeRemote } from "./merge.ts";
 import { preflightImport } from "./import-validation.ts";
+import {
+  planCleanup,
+  cleanupStep,
+  restoreCleanup,
+  type CleanupJob,
+} from "./cleanup.ts";
 type Change = { id: string; kind: Kind; payload: any; deleted?: boolean };
 export class LocalStore {
   private db: IDBDatabase | null = null;
   private queue: Promise<unknown> = Promise.resolve();
   private channel: BroadcastChannel | null = null;
   docs: Entity[] = [];
+  cleanupJob: CleanupJob | null = null;
   readonly account: string;
   onChange: () => void = () => {};
   constructor(account: string) {
@@ -14,10 +21,30 @@ export class LocalStore {
   }
   async open() {
     this.db = await new Promise<IDBDatabase>((resolve, reject) => {
-      const r = indexedDB.open("cadencia-" + this.account, 1);
-      r.onupgradeneeded = () =>
-        r.result.createObjectStore("docs", { keyPath: "id" });
-      r.onsuccess = () => resolve(r.result);
+      const r = indexedDB.open("cadencia-" + this.account, 2);
+      let blocked = false;
+      r.onblocked = () => {
+        blocked = true;
+        reject(
+          Error(
+            "Feche outras abas do Cadência e toque em Tentar novamente para atualizar seus registros com segurança.",
+          ),
+        );
+      };
+      r.onupgradeneeded = () => {
+        if (!r.result.objectStoreNames.contains("docs"))
+          r.result.createObjectStore("docs", { keyPath: "id" });
+        if (!r.result.objectStoreNames.contains("local"))
+          r.result.createObjectStore("local");
+      };
+      r.onsuccess = () => {
+        if (blocked) {
+          r.result.close();
+          return;
+        }
+        r.result.onversionchange = () => r.result.close();
+        resolve(r.result);
+      };
       r.onerror = () => reject(r.error);
     });
     await this.atomic(() => [], false);
@@ -32,18 +59,33 @@ export class LocalStore {
     transform: (docs: Entity[]) => Entity[],
     broadcast = true,
   ): Promise<Entity[]> {
+    return this.transact((docs) => ({ changes: transform(docs) }), broadcast);
+  }
+  private transact(
+    transform: (
+      docs: Entity[],
+      job: CleanupJob | null,
+    ) => { changes: Entity[]; job?: CleanupJob },
+    broadcast = true,
+  ): Promise<Entity[]> {
     const task = async () => {
       if (!this.db) throw Error("Armazenamento indisponível.");
       const result = await new Promise<Entity[]>((resolve, reject) => {
-        const t = this.db!.transaction("docs", "readwrite");
+        const t = this.db!.transaction(["docs", "local"], "readwrite");
         const object = t.objectStore("docs");
         const read = object.getAll();
+        const local = t.objectStore("local");
+        const jobRead = local.get("cleanup");
+        let nextJob: CleanupJob | null = null;
         let result: Entity[] = [];
         let reason: unknown;
-        read.onsuccess = () => {
+        jobRead.onsuccess = () => {
           try {
             const all = read.result as Entity[];
-            const changed = transform(all);
+            const update = transform(all, jobRead.result ?? null);
+            const changed = update.changes;
+            nextJob = update.job ?? jobRead.result ?? null;
+            if (update.job) local.put(update.job, "cleanup");
             for (const e of changed) {
               object.put(e);
               const i = all.findIndex((d) => d.id === e.id);
@@ -56,7 +98,10 @@ export class LocalStore {
             t.abort();
           }
         };
-        t.oncomplete = () => resolve(result);
+        t.oncomplete = () => {
+          this.cleanupJob = nextJob;
+          resolve(result);
+        };
         t.onerror = () => reject(reason || t.error);
         t.onabort = () => reject(reason || t.error);
       });
@@ -68,6 +113,39 @@ export class LocalStore {
     const next = this.queue.then(task);
     this.queue = next.catch(() => {});
     return next;
+  }
+  async createCleanup(before: string, summaries: boolean) {
+    await this.transact((docs, job) => {
+      if (job && !["complete", "cancelled"].includes(job.status))
+        throw Error("Continue ou cancele a limpeza anterior.");
+      return { changes: [], job: planCleanup(docs, before, summaries) };
+    });
+  }
+  async advanceCleanup(online: boolean) {
+    await this.transact((docs, job) =>
+      job ? cleanupStep(docs, job, online) : { changes: [] },
+    );
+  }
+  async cancelCleanup() {
+    await this.transact((_docs, job) =>
+      job
+        ? {
+            changes: [],
+            job: {
+              ...job,
+              status: "cancelled",
+              message:
+                "Restante cancelado. Lotes já registrados continuam aguardando confirmação. Recuperar detalhes já removidos exige um backup exportado antes da limpeza.",
+            },
+          }
+        : { changes: [] },
+    );
+  }
+  async recoverCleanup() {
+    await this.transact((docs, job) => {
+      if (!job) throw Error("Não há limpeza para restaurar.");
+      return restoreCleanup(docs, job);
+    });
   }
   async put(entity: Entity) {
     await this.atomic(() => [entity]);

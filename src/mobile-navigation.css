@@ -1,0 +1,27 @@
+@media (max-width: 760px) {
+  .bottom-nav.cadencia-navigation {
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    min-width: 0;
+    max-width: none;
+    width: auto;
+    box-sizing: border-box;
+  }
+  .cadencia-navigation.glisse-nav .lg-tab-bar {
+    box-sizing: border-box;
+    --lg-tab-width: var(--cadencia-tab-width, 56px);
+    width: 100%;
+  }
+  .cadencia-navigation .lg-tab-labels {
+    min-width: 0;
+  }
+  .cadencia-navigation.static-nav {
+    display: flex;
+  }
+  .cadencia-navigation.static-nav button {
+    min-width: 0;
+    flex: 1 1 0;
+    padding-inline: 0;
+  }
+}

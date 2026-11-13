@@ -20,7 +20,7 @@ Implementada a retirada reversível de treinos pausados. Confirmar retira a sess
 | Editor | Sair da ficha descartava mudanças sem aviso. | Confirmação ao mudar de área e aviso ao recarregar; alterações feitas durante um salvamento continuam marcadas como não salvas. |
 | Acessibilidade | Dias do calendário não informavam data/estado e exercícios expansíveis não anunciavam abertura. | Datas completas, estado selecionado/registrado e expansão associados aos controles. |
 | Sessão retirada | Uma tela aberta em outro aparelho poderia continuar exibindo formulários da sessão retirada. | Tela segura de retorno, bloqueio de novas alterações locais e restauração protegida contra mudanças concorrentes. |
-| Glisse | Atualizações alheias à navegação podiam provocar trabalho visual desnecessário. | Propriedades estáveis e navegação memorizada; crescimento da lente e refração mais contidos. Nenhuma modificação interna no pacote. |
+| Glisse | Atualizações alheias à navegação podiam provocar trabalho visual desnecessário. | Propriedades estáveis e navegação memorizada, limites baseados na largura real e desmontagem quando invisível; óptica e gestos preservados. Nenhuma modificação interna no pacote. |
 
 ## Verificações e evidências
 
@@ -31,16 +31,15 @@ Implementada a retirada reversível de treinos pausados. Confirmar retira a sess
 - RLS ativa nas cinco tabelas verificadas; funções do agendador e do cofre sem execução por usuário comum/anônimo. Cron de notificações ativo, última execução consultada com sucesso.
 - Auditoria de dependências sem vulnerabilidades conhecidas na consulta desta revisão.
 
-## Recomendações ainda abertas
+## Melhorias implementadas nesta continuação
 
-1. **Rascunho automático recuperável do editor — prioridade alta.** O aviso evita saídas acidentais, mas o sistema do iPhone pode encerrar a página. Salvar o rascunho local por conta e oferecer recuperar/descartar reduziria essa perda. Complexidade média.
-2. **Desfazer ou retirar uma série lançada por engano — alta.** Hoje é possível corrigir valores; remover só a série, com desfazer, seria mais rápido. Complexidade média, com atenção à identidade entre aparelhos.
-3. **Limpeza grande retomável — média.** Dividir o histórico em lotes com progresso e recuperação, em vez de apenas bloquear lotes grandes. Complexidade alta por envolver sincronização e conflitos.
-4. **Resumo de conclusão e visão dos exercícios — média.** Mostrar concluídos/pendentes/pulados e permitir saltar diretamente para um exercício. Complexidade média.
-5. **Navegação por endereço e botão Voltar — média.** Representar a área atual no endereço e gerenciar foco após navegar, preservando a ficha em edição. Complexidade média.
-6. **Comparação por séries e repetições na evolução — média.** Complementar carga máxima com a última sessão comparável; não transformar toda diferença de carga em prova de progresso. Complexidade média.
-7. **Otimização com histórico extenso — média.** Indexar sessões/séries e separar o relógio do restante da tela. Há oportunidades no código, mas não foi demonstrado travamento em uso real. Primeiro medir com uma base grande.
-8. **Identidade única de perfil/ficha no primeiro acesso offline de dois aparelhos — endurecimento futuro.** Evitar duplicação na criação inicial simultânea. Complexidade média/alta; não é uma falha reproduzida nesta varredura.
+As oito recomendações foram implementadas: rascunho recuperável por conta; retirada/desfazer série; limpeza em lotes retomáveis com restauração local do último lote confirmado; resumo e lista dos exercícios; URLs e Voltar/Avançar; comparação de séries/reps/RIR; índice de histórico e relógio isolado; identidade estável para novos perfis/fichas por conta.
+
+O treino foi dividido em aquecimento, série válida e descanso, cada um em tela própria. Os campos móveis foram compactados e arredondados; teclado numérico, seleção ao tocar e Enter da carga para repetições aceleram a entrada. As setinhas foram mantidas conforme pedido final.
+
+Novos erros corrigidos na revisão cruzada: importação que removeria exercícios ainda usados por séries; preferência ou série editada remotamente durante um formulário aberto; cache de etapa malformado; criação de perfil fora da identidade estável ao confirmar barra; repetição de alarme entre retomada/timeout; descanso cancelado voltando após restaurar uma sessão; bloqueio silencioso de atualização do armazenamento por aba antiga.
+
+Verificação atual: 63 testes Node passaram. Suítes de navegador cobrem etapas completas, entrada pelo teclado, retomada, retirada/desfazer, conflitos, rascunho, navegação, limpeza/recuperação, Glisse e reabertura offline. Larguras de 320 a 1440px foram verificadas nas jornadas pertinentes; não se detectou rolagem horizontal nas seis larguras do fluxo principal. Consultar VERIFICACAO.md para limites.
 
 ## Avisos do serviço e limites da revisão
 

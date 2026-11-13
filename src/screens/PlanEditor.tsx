@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Plus, ChevronDown, ChevronUp, Trash2, Save } from "lucide-react";
 import type { Model } from "../model.ts";
+import {
+  readEditorDraft,
+  writeEditorDraft,
+  clearEditorDraft,
+} from "../editor-draft.ts";
 import { download } from "../components.tsx";
 import {
   uid,
@@ -27,17 +32,27 @@ const blankExercise = (): Exercise => ({
 export default function PlanEditor({
   model,
   onDirtyChange,
+  accountKey,
 }: {
   model: Model;
+  accountKey: string;
   onDirtyChange?: (dirty: boolean) => void;
 }) {
   const existing = visible(model.docs, "plan")[0];
   const [plan, setPlan] = useState<Plan>(() =>
     structuredClone(
-      existing?.payload || { id: uid(), name: "Minha ficha", workouts: [] },
+      existing?.payload || {
+        id: model.singletonIds?.plan ?? uid(),
+        name: "Minha ficha",
+        workouts: [],
+      },
     ),
   );
   const [message, setMessage] = useState("");
+  const [recoverable, setRecoverable] = useState(() =>
+    readEditorDraft(accountKey),
+  );
+  const [saving, setSaving] = useState(false);
   const latestPlan = useRef(plan);
   latestPlan.current = plan;
   const [base, setBase] = useState<string | null>(
@@ -62,7 +77,16 @@ export default function PlanEditor({
     fn(p);
     setPlan(p);
     setDirty(true);
-    setMessage("Alterações ainda não salvas.");
+    try {
+      writeEditorDraft(accountKey, p, base);
+      setMessage(
+        "Rascunho guardado neste aparelho. Salve a ficha para sincronizar.",
+      );
+    } catch {
+      setMessage(
+        "Não foi possível guardar o rascunho neste aparelho. Mantenha esta tela aberta e salve a ficha.",
+      );
+    }
   };
   const days = [
     "Domingo",
@@ -73,6 +97,49 @@ export default function PlanEditor({
     "Sexta",
     "Sábado",
   ];
+  if (recoverable)
+    return (
+      <section className="empty-state">
+        <h1>Recuperar sua ficha?</h1>
+        <p>
+          Há um rascunho desta conta guardado neste aparelho em{" "}
+          {new Date(recoverable.savedAt).toLocaleString("pt-BR")}. Ele ainda não
+          foi salvo na ficha.
+        </p>
+        <div className="button-row">
+          <button
+            className="primary"
+            onClick={() => {
+              setPlan(structuredClone(recoverable.plan));
+              setBase(recoverable.base);
+              setDirty(true);
+              setRecoverable(null);
+              setMessage(
+                "Rascunho recuperado. Revise e salve a ficha para sincronizar.",
+              );
+            }}
+          >
+            Recuperar rascunho
+          </button>
+          <button
+            className="secondary"
+            onClick={() => {
+              try {
+                clearEditorDraft(accountKey);
+                setRecoverable(null);
+              } catch {
+                setMessage(
+                  "Não foi possível remover o rascunho. Tente novamente.",
+                );
+              }
+            }}
+          >
+            Descartar rascunho
+          </button>
+        </div>
+        <p role="status">{message}</p>
+      </section>
+    );
   return (
     <>
       <div className="page-title">
@@ -82,7 +149,10 @@ export default function PlanEditor({
         </div>
         <button
           className="primary"
+          disabled={saving}
           onClick={async () => {
+            if (saving) return;
+            setSaving(true);
             try {
               if (
                 !plan.name.trim() ||
@@ -99,6 +169,13 @@ export default function PlanEditor({
               const stillDirty =
                 JSON.stringify(latestPlan.current) !== JSON.stringify(plan);
               setDirty(stillDirty);
+              if (stillDirty)
+                writeEditorDraft(
+                  accountKey,
+                  latestPlan.current,
+                  JSON.stringify(plan),
+                );
+              else clearEditorDraft(accountKey);
               setMessage(
                 stillDirty
                   ? "Ficha salva. Há novas alterações ainda não salvas."
@@ -106,10 +183,12 @@ export default function PlanEditor({
               );
             } catch (e) {
               setMessage((e as Error).message);
+            } finally {
+              setSaving(false);
             }
           }}
         >
-          <Save size={18} /> Salvar ficha
+          <Save size={18} /> {saving ? "Salvando…" : "Salvar ficha"}
         </button>
       </div>
       <p className="editor-note">
@@ -144,6 +223,7 @@ export default function PlanEditor({
                 setPlan(structuredClone(existing.payload));
                 setBase(JSON.stringify(existing.payload));
                 setDirty(false);
+                clearEditorDraft(accountKey);
                 setMessage("Ficha atual carregada.");
               }
             }}
@@ -151,6 +231,41 @@ export default function PlanEditor({
             Carregar ficha atual
           </button>
         </div>
+      )}
+      <p role="status" className="editor-note">
+        {dirty
+          ? "Ficha com alterações não salvas."
+          : "Ficha sem alterações pendentes."}
+      </p>
+      {dirty && (
+        <button
+          className="text-button"
+          onClick={() => {
+            if (
+              !confirm("Descartar todas as alterações não salvas desta ficha?")
+            )
+              return;
+            try {
+              clearEditorDraft(accountKey);
+              setPlan(
+                structuredClone(
+                  existing?.payload || {
+                    id: model.singletonIds?.plan ?? plan.id,
+                    name: "Minha ficha",
+                    workouts: [],
+                  },
+                ),
+              );
+              setBase(existing ? JSON.stringify(existing.payload) : null);
+              setDirty(false);
+              setMessage("Rascunho descartado.");
+            } catch {
+              setMessage("Não foi possível descartar. Tente novamente.");
+            }
+          }}
+        >
+          Descartar alterações
+        </button>
       )}
       <label>
         Nome da ficha

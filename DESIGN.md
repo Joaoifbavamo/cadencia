@@ -196,3 +196,11 @@ Adaptação Liquid Glass de 11/11/2026: painel de Hoje opaco de raio 22px, seman
 Refinamento de 13/11/2026: navegação móvel com Glisse 0.6.0 TabBar e Trocar treino com seu Button; a seleção usa tinta neutra via --lg-fill. Glisse controla a óptica da barra; a aproximação CSS anterior permanece apenas no cabeçalho/diálogo. Navegação estática substitui o componente sob preferências de movimento/transparência reduzidos ou maior contraste. Trocar treino tem alvo mínimo de 44 px e não substitui a ação principal de iniciar/continuar. A folha da escolha mantém rótulo da data e ações explícitas.
 
 Varredura de 13/11/2026: ação Retirar treino pausado é secundária; abre confirmação explícita e preserva dados para restauração. Desfazer e Treinos retirados são identificados por texto. Erros de ações modais ficam dentro do diálogo. O Glisse mantém controles responsivos e usa crescimento de lente 12px/8px e bend .3; instâncias da navegação evitam redesenhos por estado alheio ao menu.
+
+## Fluxo móvel substituído nesta revisão
+
+Uma etapa por tela: aproximação de aquecimento, série válida, descanso, registros, lista ou resumo. A tela de descanso usa uma contagem grande e círculo de progresso; o ícone interno mantém 22px e não herda a dimensão do SVG de progresso. Apenas a etapa ativa permanece montada. O relógio não atualiza o componente pai a cada segundo.
+
+Campos de registro: dois controles lado a lado, 52px de altura, raio 12px, rótulos persistentes, teclado decimal/numérico e seleção do conteúdo ao receber foco. RIR fica opcional. Os controles recolhíveis mantêm suas setas, conforme orientação final do usuário. A lente/refração/gestos originais do Glisse permanecem; a otimização remove trabalho invisível e mede a largura real com as áreas seguras.
+
+Referências de interação consultadas: [Apple disclosure controls](https://developer.apple.com/design/human-interface-guidelines/disclosure-controls), [WAI accordion](https://www.w3.org/WAI/ARIA/apg/patterns/accordion/), [Material text fields](https://m3.material.io/components/text-fields/guidelines). Referências orientam rótulos, foco e entrada direta; não substituem o pedido do usuário.

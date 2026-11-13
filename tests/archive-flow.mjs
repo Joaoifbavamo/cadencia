@@ -1,4 +1,124 @@
-import {chromium} from '@playwright/test';import {fileURLToPath} from 'node:url';
-const b=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});try{const c=await b.newContext({viewport:{width:390,height:844}}),p=await c.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));const nav=async name=>p.locator('.bottom-nav').getByRole('button',{name,exact:true}).or(p.locator('.bottom-nav').getByRole('tab',{name,exact:true})).click();const shot=async name=>p.screenshot({path:fileURLToPath(new URL('../.impeccable/review/'+name+'.png',import.meta.url)),fullPage:true});
-await p.goto('http://127.0.0.1:5174');await p.getByRole('button',{name:'Conhecer a demonstração'}).click();await p.getByRole('heading',{name:'Treino de hoje'}).waitFor();const choice=p.getByRole('button',{name:'Escolher um treino'});if(await choice.isVisible()){await choice.click();await p.getByRole('button',{name:/Superior · exemplo/}).click();await p.getByRole('dialog').waitFor({state:'hidden'})}await p.getByRole('button',{name:'Começar treino'}).click();await p.getByLabel('Carga série 1',{exact:true}).fill('30');await p.getByLabel('Repetições série 1',{exact:true}).fill('8');await p.getByRole('button',{name:'Salvar série 1',exact:true}).click();await p.getByRole('heading',{name:'Série 2 de 3'}).waitFor();await p.getByRole('button',{name:'Voltar para hoje'}).click();await p.getByRole('button',{name:'Retirar treino pausado',exact:true}).click();await shot('archive-confirm');await p.getByRole('button',{name:'Confirmar retirada'}).click();await p.getByRole('dialog').waitFor({state:'hidden'});if(await p.getByRole('button',{name:'Continuar treino'}).count())throw Error('Pausado continua visível');await p.getByRole('button',{name:'Desfazer retirada'}).click();await p.getByRole('button',{name:'Continuar treino'}).waitFor();await p.getByRole('button',{name:'Retirar treino pausado',exact:true}).click();await p.getByRole('button',{name:'Confirmar retirada'}).click();await p.getByRole('dialog').waitFor({state:'hidden'});await nav('Evolução');if(await p.locator('.progress-table').getByText('30',{exact:true}).count())throw Error('Série retirada ainda na evolução');await p.reload();await p.getByRole('button',{name:'Conhecer a demonstração'}).click();await p.getByRole('button',{name:'Treinos retirados (1)'}).click();await shot('archive-restore');await p.evaluate(async()=>{const {LocalStore}=await import('/src/storage.ts');const s=await new LocalStore('demo').open();const d=s.docs.find(d=>d.kind==='session'&&d.payload.archivedAt);localStorage.setItem('rest-'+d.id,String(Date.now()+120000));s.close()});await p.getByRole('button',{name:'Restaurar Superior · exemplo'}).click();await p.getByRole('button',{name:'Fechar',exact:true}).click();await p.getByRole('button',{name:'Continuar treino'}).click();await p.locator('.series-history summary').click();await p.getByRole('button',{name:'Editar série 1'}).click();if(await p.getByLabel('Carga série 1',{exact:true}).inputValue()!=='30')throw Error('Dados perdidos na restauração');if(await p.getByRole('timer').count())throw Error('Cronômetro antigo reativado');await p.getByRole('button',{name:'Voltar para hoje'}).click();
-await nav('Meu treino');const original=await p.getByLabel('Nome da ficha').inputValue();await p.getByLabel('Nome da ficha').fill('Rascunho não salvo');p.once('dialog',d=>d.dismiss());await nav('Hoje');await p.getByRole('heading',{name:'Meu treino',exact:true}).waitFor();if(await p.getByLabel('Nome da ficha').inputValue()!=='Rascunho não salvo')throw Error('Rascunho perdido após cancelar saída');p.once('dialog',d=>d.accept());await nav('Hoje');await nav('Meu treino');if(await p.getByLabel('Nome da ficha').inputValue()!==original)throw Error('Descarte confirmado não aplicado');await p.evaluate(async()=>{const {supabase}=await import('/src/auth.ts');await supabase.auth.signOut()});await p.getByRole('button',{name:'Conhecer a demonstração'}).waitFor();if(errors.length)throw Error(JSON.stringify(errors));console.log(JSON.stringify({passed:'retirada, desfazer, recarregar/restaurar com séries preservadas, evolução sem retirados, cronômetro não reativado, guardas do editor, saída externa sem loading preso',errors}));}finally{await b.close()}
+import { chromium } from "@playwright/test";
+import { fileURLToPath } from "node:url";
+const b = await chromium.launch({
+  executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
+  headless: true,
+});
+try {
+  const c = await b.newContext({ viewport: { width: 390, height: 844 } }),
+    p = await c.newPage(),
+    errors = [];
+  p.on("pageerror", (e) => errors.push(e.message));
+  const nav = async (name) =>
+    p
+      .locator(".bottom-nav")
+      .getByRole("button", { name, exact: true })
+      .or(p.locator(".bottom-nav").getByRole("tab", { name, exact: true }))
+      .click();
+  const shot = async (name) =>
+    p.screenshot({
+      path: fileURLToPath(
+        new URL("../.impeccable/review/" + name + ".png", import.meta.url),
+      ),
+      fullPage: true,
+    });
+  await p.goto(process.env.REVIEW_BASE_URL || "http://127.0.0.1:5177");
+  await p.getByRole("button", { name: "Conhecer a demonstração" }).click();
+  await p.getByRole("heading", { name: "Treino de hoje" }).waitFor();
+  const choice = p.getByRole("button", { name: "Escolher um treino" });
+  if (await choice.isVisible()) {
+    await choice.click();
+    await p.getByRole("button", { name: /Superior · exemplo/ }).click();
+    await p.getByRole("dialog").waitFor({ state: "hidden" });
+  }
+  await p.getByRole("button", { name: "Começar treino" }).click();
+  p.once("dialog", (d) => d.accept());
+  await p
+    .getByRole("button", { name: "Pular aquecimento", exact: true })
+    .click();
+  await p.getByLabel("Carga série 1", { exact: true }).fill("30");
+  await p.getByLabel("Repetições série 1", { exact: true }).fill("8");
+  await p
+    .getByRole("button", { name: "Salvar série 1 e descansar", exact: true })
+    .click();
+  await p
+    .getByRole("heading", { name: "Hora de descansar", exact: true })
+    .waitFor();
+  await p.getByRole("button", { name: "Voltar para hoje" }).click();
+  await p
+    .getByRole("button", { name: "Retirar treino pausado", exact: true })
+    .click();
+  await shot("archive-confirm");
+  await p.getByRole("button", { name: "Confirmar retirada" }).click();
+  await p.getByRole("dialog").waitFor({ state: "hidden" });
+  if (await p.getByRole("button", { name: "Continuar treino" }).count())
+    throw Error("Pausado continua visível");
+  await p.getByRole("button", { name: "Desfazer retirada" }).click();
+  await p.getByRole("button", { name: "Continuar treino" }).waitFor();
+  await p
+    .getByRole("button", { name: "Retirar treino pausado", exact: true })
+    .click();
+  await p.getByRole("button", { name: "Confirmar retirada" }).click();
+  await p.getByRole("dialog").waitFor({ state: "hidden" });
+  await nav("Evolução");
+  if (
+    await p.locator(".table-scroll").getByText("30 kg", { exact: true }).count()
+  )
+    throw Error("Série retirada ainda na evolução");
+  await p.reload();
+  await p.getByRole("button", { name: "Conhecer a demonstração" }).click();
+  await nav("Hoje");
+  await p.getByRole("button", { name: "Treinos retirados (1)" }).click();
+  await shot("archive-restore");
+  await p.evaluate(async () => {
+    const { LocalStore } = await import("/src/storage.ts");
+    const s = await new LocalStore("demo").open();
+    const d = s.docs.find((d) => d.kind === "session" && d.payload.archivedAt);
+    localStorage.setItem("rest-" + d.id, String(Date.now() + 120000));
+    s.close();
+  });
+  await p.getByRole("button", { name: "Restaurar Superior · exemplo" }).click();
+  await p.getByRole("button", { name: "Fechar", exact: true }).click();
+  await p.getByRole("button", { name: "Continuar treino" }).click();
+  await p
+    .getByRole("button", { name: "Ver séries deste exercício", exact: true })
+    .click();
+  await p.getByRole("button", { name: "Editar série 1" }).click();
+  if (
+    (await p.getByLabel("Carga série 1", { exact: true }).inputValue()) !== "30"
+  )
+    throw Error("Dados perdidos na restauração");
+  if (await p.getByRole("timer").count())
+    throw Error("Cronômetro antigo reativado");
+  await p.getByRole("button", { name: "Voltar para hoje" }).click();
+  await nav("Meu treino");
+  const original = await p.getByLabel("Nome da ficha").inputValue();
+  await p.getByLabel("Nome da ficha").fill("Rascunho não salvo");
+  p.once("dialog", (d) => d.dismiss());
+  await nav("Hoje");
+  await p.getByRole("heading", { name: "Meu treino", exact: true }).waitFor();
+  if (
+    (await p.getByLabel("Nome da ficha").inputValue()) !== "Rascunho não salvo"
+  )
+    throw Error("Rascunho perdido após cancelar saída");
+  p.once("dialog", (d) => d.accept());
+  await nav("Hoje");
+  await nav("Meu treino");
+  if ((await p.getByLabel("Nome da ficha").inputValue()) !== original)
+    throw Error("Descarte confirmado não aplicado");
+  await p.evaluate(async () => {
+    const { supabase } = await import("/src/auth.ts");
+    await supabase.auth.signOut();
+  });
+  await p.getByRole("button", { name: "Conhecer a demonstração" }).waitFor();
+  if (errors.length) throw Error(JSON.stringify(errors));
+  console.log(
+    JSON.stringify({
+      passed:
+        "retirada, desfazer, recarregar/restaurar com séries preservadas, evolução sem retirados, cronômetro não reativado, guardas do editor, saída externa sem loading preso",
+      errors,
+    }),
+  );
+} finally {
+  await b.close();
+}

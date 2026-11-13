@@ -1,4 +1,4 @@
-const CACHE = "cadencia-shell-index-C6TwHR8r.css-index-CcLcnNmL.js-manrope-latin-wght-normal-DHIcAJRg.woff2";
+const CACHE = "cadencia-shell-index-DYJn8W16.css-index-QHGHo3es.js-manrope-latin-wght-normal-DHIcAJRg.woff2";
 self.addEventListener("message", (event) => {
   if (event.data?.type === "ACTIVATE_UPDATE") self.skipWaiting();
 });
@@ -9,7 +9,7 @@ self.addEventListener("install", (event) => {
         "./",
         "./manifest.webmanifest",
         "./icons/apple-touch-icon.png",
-        "./assets/index-C6TwHR8r.css","./assets/index-CcLcnNmL.js","./assets/manrope-latin-wght-normal-DHIcAJRg.woff2"
+        "./assets/index-DYJn8W16.css","./assets/index-QHGHo3es.js","./assets/manrope-latin-wght-normal-DHIcAJRg.woff2"
       ]),
     ),
   );

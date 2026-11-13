@@ -1,379 +1,792 @@
-import { useEffect, useState, useRef } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
+  ArrowRight,
   Check,
-  ChevronRight,
   Clock3,
+  List,
   SkipForward,
-  ChevronLeft,
+  Volume2,
+  VolumeX,
+  Trash2,
+  Undo2,
 } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import type { Model } from "../model.ts";
 import {
-  type Session,
-  type Exercise,
-  type Entity,
   visible,
-  validateSet,
-  setIdentity,
   latestSet,
   warmup,
+  validateSet,
+  setIdentity,
   unitLabel,
-  firstPendingExerciseIndex,
+  uid,
+  type Entity,
+  type Session,
+  type Exercise,
 } from "../domain.ts";
-import { Sheet } from "../components.tsx";
-import { scheduleRest, foregroundRest } from "../notifications.ts";
-import { timerRemaining } from "../notification-domain.ts";
+import { Sheet, formatDate } from "../components.tsx";
+import {
+  loadFlow,
+  flowAfterRest,
+  prepared,
+  type Flow,
+  type Phase,
+} from "../workout-flow.ts";
+import { armAlarm, cancelAlarm, unlockAlarm, playAlarm } from "../alarm.ts";
+import {
+  scheduleRest,
+  foregroundRest,
+  cancelRestForSession,
+} from "../notifications.ts";
+import "../guided-workout.css";
+type GuidedSession = Session & { warmupDone?: string[] };
 export default function Workout({
   model,
   sessionId,
   onClose,
+  accountKey = "local",
 }: {
   model: Model;
   sessionId: string;
   onClose: () => void;
+  accountKey?: string;
 }) {
-  const document = model.docs.find(
-    (d) => d.id === sessionId && d.kind === "session" && !d.deleted,
+  const doc = model.docs.find(
+    (d) => d.kind === "session" && d.id === sessionId && !d.deleted,
   );
-  if (!document || document.payload.archivedAt)
+  if (!doc || doc.payload.archivedAt)
     return (
       <div className="empty">
         <h1>Este treino foi removido.</h1>
-        <p>Volte para hoje para escolher outro treino.</p>
         <button className="secondary" onClick={onClose}>
           Voltar para hoje
         </button>
       </div>
     );
   return (
-    <WorkoutSession
+    <GuidedWorkout
       key={sessionId}
       model={model}
-      session={document.payload}
-      sessionId={sessionId}
+      session={doc.payload}
       onClose={onClose}
+      accountKey={accountKey}
     />
   );
 }
-function WorkoutSession({
+function GuidedWorkout({
   model,
   session,
-  sessionId,
   onClose,
+  accountKey,
 }: {
   model: Model;
-  session: Session;
-  sessionId: string;
+  session: GuidedSession;
   onClose: () => void;
+  accountKey: string;
 }) {
-  const history = Boolean(session.finishedAt);
-  const [index, setIndex] = useState(() =>
-      firstPendingExerciseIndex(session, model.docs),
-    ),
-    [error, setError] = useState(""),
-    [finish, setFinish] = useState(false),
+  const key = "guided-" + accountKey + "-" + session.id,
+    restKey = "rest-" + session.id;
+  const [flow, setFlow] = useState<Flow>(() => {
+    const cached = loadFlow(localStorage.getItem(key), session, model.docs);
+    const rest = Number(localStorage.getItem(restKey) || 0);
+    return cached.phase === "rest" && (!Number.isFinite(rest) || rest <= 0)
+      ? flowAfterRest(cached, session, model.docs)
+      : cached;
+  });
+  const [deadline, setDeadline] = useState(() =>
+    session.finishedAt ? 0 : Number(localStorage.getItem(restKey) || 0),
+  );
+  const [sound, setSound] = useState(
+    () => localStorage.getItem("alarm-" + accountKey) !== "off",
+  );
+  const [error, setError] = useState(""),
+    [busy, setBusy] = useState(false),
     [skip, setSkip] = useState(false),
     [reason, setReason] = useState("Aparelho indisponível"),
-    [tick, setTick] = useState(Date.now());
-  const key = "rest-" + sessionId;
-  const [deadline, setDeadline] = useState(
-    Number(localStorage.getItem(key) || 0),
+    [remove, setRemove] = useState<Entity | null>(null),
+    [undo, setUndo] = useState<Entity | null>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const busyRef = useRef(false),
+    reduced = useReducedMotion();
+  const history = Boolean(session.finishedAt);
+  const sets = useMemo(
+    () =>
+      visible(model.docs, "set").filter(
+        (d) => d.payload.sessionId === session.id,
+      ),
+    [model.docs, session.id],
   );
-  const reduced = useReducedMotion();
+  const exercise =
+    session.workout.exercises.find((e) => e.id === flow.exerciseId) ??
+    session.workout.exercises[0];
+  const recorded = useMemo(
+    () =>
+      sets
+        .filter((s) => s.payload.exerciseId === exercise?.id)
+        .sort((a, b) => a.payload.index - b.payload.index),
+    [sets, exercise?.id],
+  );
+  const reference = useMemo(
+    () => (exercise ? latestSet(model.docs, exercise, session.id) : undefined),
+    [model.docs, exercise, session.id],
+  );
+  const [editing, setEditing] = useState<number | null>(null);
+  const active =
+    editing ??
+    Array.from({ length: exercise?.sets ?? 0 }, (_, i) => i).find(
+      (i) => !recorded.some((d) => d.payload.index === i),
+    ) ??
+    Math.max(0, (exercise?.sets ?? 1) - 1);
+  const [target, setTarget] = useState(
+    () => flow.targets[exercise?.id] ?? String(reference?.load ?? ""),
+  );
   useEffect(() => {
-    if (history) return;
-    const t = setInterval(() => setTick(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, [history]);
-  useEffect(() => {
+    setTarget(flow.targets[exercise?.id] ?? String(reference?.load ?? ""));
+    setEditing(null);
+  }, [exercise?.id]);
+  const patch = (next: Partial<Flow>) => setFlow((f) => ({ ...f, ...next }));
+  const go = (phase: Phase) => {
+    setError("");
+    patch({ phase });
     window.scrollTo({ top: 0 });
-  }, [index]);
-  const exercise = session.workout.exercises[index];
-  const sets = visible(model.docs, "set").filter(
-    (d) => d.payload.sessionId === sessionId,
-  );
-  const count = sets.filter(
-    (d) => d.payload.exerciseId === exercise?.id,
-  ).length;
-  const total = session.workout.exercises.reduce((n, e) => n + e.sets, 0);
-  const remaining = history ? 0 : timerRemaining(deadline, tick);
-  const [restFinished, setRestFinished] = useState(false);
-  const notified = useRef(0);
-  useEffect(() => {
-    if (
-      deadline > 0 &&
-      tick >= deadline &&
-      notified.current !== deadline &&
-      !history &&
-      tick - deadline < 300000
-    ) {
-      notified.current = deadline;
-      setRestFinished(true);
-      if (!model.demo) void foregroundRest(sessionId, deadline).catch(() => {});
-    }
-  }, [tick, deadline, history]);
-  const elapsed = Math.max(
-    0,
-    Math.floor(
-      ((session.finishedAt ? Date.parse(session.finishedAt) : tick) -
-        Date.parse(session.startedAt)) /
-        60000,
-    ),
-  );
-  const timer = (s: number) => {
-    if (history) return;
-    const d = s > 0 ? Date.now() + s * 1000 : 0;
-    localStorage.setItem(key, String(d));
-    setDeadline(d);
-    setTick(Date.now());
-    setRestFinished(false);
-    if (!model.demo)
-      void scheduleRest(sessionId, d).catch(() =>
-        setError(
-          "O relógio funciona aqui; o aviso com o app fechado não foi agendado. Confira conexão e notificações.",
-        ),
-      );
   };
-  const attempt = async (fn: () => Promise<void>) => {
+  useEffect(() => {
+    localStorage.setItem(key, JSON.stringify(flow));
+  }, [key, flow]);
+  useEffect(() => {
+    if (deadline > 0 && !history) armAlarm(session.id, deadline, sound);
+    else cancelAlarm(session.id);
+  }, [deadline, history, sound, session.id]);
+  useEffect(() => {
+    if (history) {
+      setDeadline(0);
+      localStorage.removeItem(restKey);
+      void cancelRestForSession(session.id).catch(() => {});
+      patch({ phase: "review" });
+    }
+  }, [history]);
+  const run = async (fn: () => Promise<void>) => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    setError("");
     try {
-      setError("");
       await fn();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Não foi possível salvar.");
+      setError((e as Error).message);
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
     }
   };
-  const next = () => {
-    if (
-      !history &&
-      count < exercise.sets &&
-      !session.skipped[exercise.id] &&
-      !confirm(
-        "Ainda há séries sem registro. Avançar para o próximo exercício?",
+  const stopRest = () => {
+    cancelAlarm(session.id);
+    setDeadline(0);
+    localStorage.removeItem(restKey);
+    if (!model.demo) void cancelRestForSession(session.id).catch(() => {});
+  };
+  const startRest = (
+    seconds: number,
+    restReturn: Flow["restReturn"],
+    label: string,
+  ) => {
+    const end = Date.now() + seconds * 1000;
+    localStorage.setItem(restKey, String(end));
+    setDeadline(end);
+    patch({
+      phase: "rest",
+      restReturn,
+      restLabel: label,
+      restSeconds: seconds,
+    });
+    armAlarm(session.id, end, sound);
+    if (!model.demo)
+      void scheduleRest(session.id, end).catch(() =>
+        setError(
+          "O cronômetro está ativo. O aviso com o app fechado não foi agendado; confira sua conexão.",
+        ),
+      );
+    window.scrollTo({ top: 0 });
+  };
+  const finishWarm = async () => {
+    const warmed = [...new Set([...flow.warmed, exercise.id])];
+    const remote = Array.isArray(session.warmupDone) ? session.warmupDone : [];
+    await model.save(
+      session.id,
+      "session",
+      { ...session, warmupDone: [...new Set([...remote, exercise.id])] },
+      false,
+      JSON.stringify(session),
+    );
+    patch({ warmed });
+  };
+  const nextExercise = () => {
+    stopRest();
+    setEditing(null);
+    setFlow((f) =>
+      flowAfterRest({ ...f, restReturn: "next" }, session, model.docs),
+    );
+    window.scrollTo({ top: 0 });
+  };
+  const openExercise = (id: string) => {
+    const e = session.workout.exercises.find((s) => s.id === id)!;
+    stopRest();
+    setEditing(null);
+    patch({
+      exerciseId: id,
+      warmIndex: 0,
+      phase: history
+        ? "records"
+        : e.warm !== "none" && !prepared(session, model.docs, flow.warmed, id)
+          ? "warmup"
+          : "work",
+    });
+    window.scrollTo({ top: 0 });
+  };
+  const saveSet = async (
+    load: string,
+    reps: string,
+    rir: string,
+    baseline: string | null,
+  ) => {
+    if (busyRef.current) throw Error("Aguarde salvar a série.");
+    busyRef.current = true;
+    setBusy(true);
+    setError("");
+    try {
+      const values = validateSet(load, reps, rir);
+      if (
+        exercise.unit === "bar" &&
+        model.profile.barWeight !== null &&
+        values.load < model.profile.barWeight
       )
-    )
-      return;
-    if (index < session.workout.exercises.length - 1) setIndex(index + 1);
-    else if (history) onClose();
-    else {
-      setError("");
-      setFinish(true);
+        throw Error("A carga total deve incluir a barra.");
+      const old = recorded.find((d) => d.payload.index === active);
+      if (history && !old)
+        throw Error("No histórico, corrija apenas séries registradas.");
+      const id =
+        old?.id ?? (await setIdentity(session.id, exercise.id, active));
+      const raw = model.docs.find((d) => d.id === id);
+      await model.save(
+        id,
+        "set",
+        {
+          sessionId: session.id,
+          exerciseId: exercise.id,
+          index: active,
+          ...values,
+          machine: exercise.machine,
+        },
+        false,
+        baseline === null && raw?.deleted
+          ? JSON.stringify(raw.payload)
+          : baseline,
+      );
+      setTarget(String(values.load));
+      patch({
+        targets: { ...flow.targets, [exercise.id]: String(values.load) },
+        lastIndex: active,
+      });
+      if (history || editing !== null) {
+        setEditing(null);
+        go("records");
+      } else
+        startRest(
+          exercise.rest,
+          recorded.length + (old ? 0 : 1) >= exercise.sets ? "next" : "work",
+          `Série ${active + 1} salva`,
+        );
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
     }
   };
+  const removeSet = () =>
+    run(async () => {
+      if (!remove) return;
+      const current = model.docs.find((d) => d.id === remove.id);
+      if (!current || current.deleted)
+        throw Error("Esta série já foi alterada.");
+      await model.save(
+        current.id,
+        "set",
+        current.payload,
+        true,
+        JSON.stringify(remove.payload),
+      );
+      setUndo(remove);
+      setRemove(null);
+      stopRest();
+    });
+  const restoreSet = () =>
+    run(async () => {
+      if (!undo) return;
+      const current = model.docs.find((d) => d.id === undo.id);
+      if (!current?.deleted)
+        throw Error("A série já foi alterada. Confira os registros.");
+      await model.save(
+        undo.id,
+        "set",
+        undo.payload,
+        false,
+        JSON.stringify(current.payload),
+      );
+      setUndo(null);
+    });
+  useEffect(() => {
+    const heading = stageRef.current?.querySelector("h1");
+    if (heading) {
+      heading.tabIndex = -1;
+      heading.focus({ preventScroll: true });
+    }
+  }, [flow.phase, exercise?.id]);
   if (!exercise)
     return (
       <div className="empty">
         <h1>Este treino está sem exercícios.</h1>
         <button className="secondary" onClick={onClose}>
-          Voltar e editar ficha
+          Voltar para hoje
         </button>
       </div>
     );
+  const index = session.workout.exercises.findIndex(
+    (e) => e.id === exercise.id,
+  );
+  const label =
+    flow.phase === "warmup"
+      ? "Aquecimento"
+      : flow.phase === "work"
+        ? "Séries válidas"
+        : flow.phase === "rest"
+          ? "Descanso"
+          : flow.phase === "overview"
+            ? "Exercícios"
+            : flow.phase === "records"
+              ? "Registros"
+              : "Resumo";
   return (
-    <div className="workout-screen workout-v2">
-      <header className="workout-head">
+    <div className="guided-workout" ref={stageRef}>
+      <header className="guided-toolbar">
         <button
           className="icon"
           aria-label="Voltar para hoje"
           onClick={onClose}
+          disabled={busy}
         >
           <ArrowLeft />
         </button>
         <div>
           <span>{session.workout.name}</span>
-          <small>
-            Exercício {index + 1} de {session.workout.exercises.length}
-          </small>
+          <b>{label}</b>
         </div>
-        <span className="elapsed">
-          <Clock3 size={15} />
-          {elapsed} min
-        </span>
+        <button
+          className="icon"
+          aria-label="Ver exercícios do treino"
+          onClick={() => go("overview")}
+          disabled={busy}
+        >
+          <List />
+        </button>
       </header>
-      {history && (
-        <p className="fine" role="status">
-          Treino concluído · você pode corrigir as séries registradas. O horário
-          de conclusão será preservado.
-        </p>
-      )}
-      <motion.div
-        key={exercise.id}
-        initial={reduced ? false : { y: 6 }}
-        animate={{ y: 0 }}
-        transition={{ type: "spring", bounce: 0, duration: reduced ? 0 : 0.25 }}
-      >
-        <h1 className="exercise-title">{exercise.name}</h1>
-        <dl className="prescription">
-          <div>
-            <dt>Séries × reps</dt>
-            <dd>
-              {exercise.sets} × {exercise.min}–{exercise.max}
-            </dd>
-          </div>
-          <div>
-            <dt>Esforço</dt>
-            <dd>RIR {exercise.rir}</dd>
-          </div>
-          <div>
-            <dt>Pausa</dt>
-            <dd>
-              {exercise.rest >= 120
-                ? exercise.rest / 60 + " min"
-                : exercise.rest + " s"}
-            </dd>
-          </div>
-        </dl>
-        <ExerciseEntry
-          key={exercise.id}
-          exercise={exercise}
-          session={session}
-          model={model}
-          history={history}
-          attempt={attempt}
-          onSave={() => timer(exercise.rest)}
-        />
-      </motion.div>
-      {error && !skip && !finish && (
-        <p role="alert" className="error">
+      {error && (
+        <p className="error" role="alert">
           {error}
         </p>
       )}
-      {restFinished && !history && (
-        <div className="rest-finished" role="status">
-          <Check size={18} />
-          <span>Descanso concluído. Próxima série quando estiver pronto.</span>
+      {undo && (
+        <div className="guided-feedback" role="status">
+          <span>Série retirada.</span>
           <button
-            className="icon"
-            aria-label="Dispensar aviso de descanso"
-            onClick={() => setRestFinished(false)}
+            className="text-button"
+            disabled={busy}
+            onClick={() => void restoreSet()}
           >
-            <Check size={18} />
+            <Undo2 size={16} />
+            Desfazer série
           </button>
         </div>
       )}
-      {remaining > 0 && (
-        <div className="rest-bar" role="timer">
-          <Clock3 size={20} />
-          <span>
-            Descanso
-            <b>
-              {Math.floor(remaining / 60)}:
-              {String(remaining % 60).padStart(2, "0")}
-            </b>
-          </span>
-          <button className="text-button" onClick={() => timer(remaining + 30)}>
-            +30 s
-          </button>
-          <button
-            className="icon"
-            aria-label="Encerrar descanso"
-            onClick={() => timer(0)}
-          >
-            <Check size={19} />
-          </button>
-        </div>
-      )}
-      <div className="exercise-nav">
-        <button
-          className="secondary"
-          disabled={index === 0}
-          onClick={() => setIndex(index - 1)}
-        >
-          <ChevronLeft size={17} />
-          Anterior
-        </button>
-        <button
-          className={count >= exercise.sets ? "primary" : "secondary"}
-          onClick={next}
-        >
-          {index === session.workout.exercises.length - 1
-            ? history
-              ? "Fechar histórico"
-              : "Revisar treino"
-            : "Próximo exercício"}
-          <ChevronRight size={17} />
-        </button>
-      </div>
-      <details className="instructions">
-        <summary>Orientações e opções</summary>
-        <p>
-          {exercise.notes ||
-            "Use amplitude confortável e execução controlada. Dor aguda é motivo para interromper."}
-        </p>
-        <p>
-          <b>Se indisponível:</b>{" "}
-          {exercise.alternative ||
-            "Escolha uma variação familiar e registre a carga separadamente."}
-        </p>
-        <p>
-          Avance nas repetições mantendo o RIR. Ao alcançar o topo em todas as
-          séries, no RIR alvo, em duas exposições comparáveis, considere o menor
-          aumento de carga disponível.
-        </p>
-        {!history && (
-          <button
-            className="text-button skip-action"
-            onClick={() => {
-              setError("");
-              setSkip(true);
-            }}
-          >
-            <SkipForward size={16} />
-            Pular este exercício
-          </button>
-        )}
-      </details>
-      {session.skipped[exercise.id] && (
-        <p className="fine">
-          Pulado: {session.skipped[exercise.id]}{" "}
-          {!history && (
-            <button
-              className="text-button"
-              onClick={() =>
-                attempt(async () => {
-                  const skipped = { ...session.skipped };
-                  delete skipped[exercise.id];
-                  await model.save(session.id, "session", {
-                    ...session,
-                    skipped,
-                  });
+      <motion.div
+        key={flow.phase + "-" + exercise.id}
+        initial={reduced ? false : { opacity: 0.85, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", bounce: 0, duration: reduced ? 0 : 0.25 }}
+        className="guided-stage"
+      >
+        {flow.phase === "warmup" && (
+          <>
+            <h1>Aquecimento</h1>
+            <p className="guided-subtitle">{exercise.name}</p>
+            <WarmupStage
+              key={exercise.id}
+              model={model}
+              exercise={exercise}
+              target={target}
+              onTarget={(v) => {
+                setTarget(v);
+                patch({
+                  targets: { ...flow.targets, [exercise.id]: v },
+                  warmIndex: 0,
+                });
+              }}
+              stageIndex={flow.warmIndex}
+              busy={busy}
+              onComplete={(stage) =>
+                void run(async () => {
+                  void unlockAlarm();
+                  if (stage.last) {
+                    await finishWarm();
+                    startRest(stage.rest, "work", "Aquecimento concluído");
+                  } else {
+                    patch({ warmIndex: flow.warmIndex + 1 });
+                    startRest(stage.rest, "warmup", "Aproximação concluída");
+                  }
                 })
               }
+              onManual={() =>
+                void run(async () => {
+                  void unlockAlarm();
+                  await finishWarm();
+                  go("work");
+                })
+              }
+            />
+            <button
+              className="text-button stage-minor"
+              disabled={busy}
+              onClick={() => {
+                if (confirm("Pular o aquecimento deste exercício?"))
+                  void run(async () => {
+                    await finishWarm();
+                    go("work");
+                  });
+              }}
             >
-              Desfazer
+              Pular aquecimento
             </button>
-          )}
-        </p>
-      )}
-      {elapsed >= 40 && !session.finishedAt && (
-        <p className="time-warning">
-          Você está com {elapsed} min de sessão. Preserve as pausas dos básicos
-          e retire acessórios se necessário para encerrar em 45 min.
-        </p>
-      )}
-      {skip && !history && (
-        <Sheet title="Pular exercício" onClose={() => setSkip(false)}>
+          </>
+        )}
+        {flow.phase === "work" && (
+          <>
+            <p className="guided-position">
+              Exercício {index + 1} de {session.workout.exercises.length}
+            </p>
+            <h1>{exercise.name}</h1>
+            <p className="guided-subtitle">
+              {exercise.sets} × {exercise.min}–{exercise.max} repetições · RIR
+              alvo {exercise.rir}
+            </p>
+            {recorded.length >= exercise.sets && editing === null ? (
+              <div className="guided-completed">
+                <Check size={28} />
+                <h2>Séries concluídas</h2>
+                <p>Todas as séries deste exercício foram registradas.</p>
+                <button className="primary guided-full" onClick={nextExercise}>
+                  Continuar treino <ArrowRight size={18} />
+                </button>
+              </div>
+            ) : (
+              <>
+                <h2 className="guided-series-heading">
+                  {editing !== null ? "Corrigir série" : "Série"} {active + 1}{" "}
+                  de {exercise.sets}
+                </h2>
+                <WorkingSetForm
+                  key={exercise.id + "-" + active + "-" + (editing !== null)}
+                  exercise={exercise}
+                  index={active}
+                  initial={recorded.find((d) => d.payload.index === active)}
+                  suggested={target || String(reference?.load ?? "")}
+                  history={history || editing !== null}
+                  onSave={saveSet}
+                />
+              </>
+            )}
+            {reference && (
+              <p className="guided-reference">
+                Última sessão comparável: {reference.load} kg × {reference.reps}{" "}
+                reps{reference.rir !== null ? ` · RIR ${reference.rir}` : ""}.
+              </p>
+            )}
+            <div className="guided-secondary">
+              <button
+                className="text-button"
+                onClick={() => go("records")}
+                disabled={busy}
+              >
+                Ver séries deste exercício
+              </button>
+              <button
+                className="text-button"
+                onClick={() => {
+                  if (
+                    recorded.length < exercise.sets &&
+                    !confirm(
+                      "Ainda há séries sem registro. Avançar mesmo assim?",
+                    )
+                  )
+                    return;
+                  nextExercise();
+                }}
+                disabled={busy}
+              >
+                Próximo exercício <ArrowRight size={16} />
+              </button>
+            </div>
+            <details className="guided-instructions">
+              <summary>Execução, alternativas e opções</summary>
+              <p>
+                {exercise.notes ||
+                  "Use amplitude confortável e execução controlada."}
+              </p>
+              <p>
+                <b>Alternativa:</b>{" "}
+                {exercise.alternative ||
+                  "Use uma variação familiar e registre separadamente."}
+              </p>
+              <button
+                className="text-button"
+                disabled={busy}
+                onClick={() => {
+                  setError("");
+                  setSkip(true);
+                }}
+              >
+                <SkipForward size={16} />
+                Pular exercício
+              </button>
+            </details>
+          </>
+        )}
+        {flow.phase === "rest" && (
+          <RestStage
+            key={deadline}
+            deadline={deadline}
+            seconds={flow.restSeconds}
+            label={flow.restLabel}
+            sound={sound}
+            onSound={async () => {
+              const enabled = !sound;
+              setSound(enabled);
+              localStorage.setItem(
+                "alarm-" + accountKey,
+                enabled ? "on" : "off",
+              );
+              armAlarm(session.id, deadline, enabled);
+              if (enabled) await unlockAlarm();
+            }}
+            onTest={async () => {
+              await unlockAlarm();
+              playAlarm();
+            }}
+            onMore={() =>
+              startRest(
+                Math.max(0, Math.ceil((deadline - Date.now()) / 1000)) + 30,
+                flow.restReturn,
+                flow.restLabel,
+              )
+            }
+            onDone={() => {
+              stopRest();
+              setFlow((f) => flowAfterRest(f, session, model.docs));
+              window.scrollTo({ top: 0 });
+            }}
+            nextLabel={
+              flow.restReturn === "warmup"
+                ? "Próxima aproximação"
+                : flow.restReturn === "next"
+                  ? "Continuar treino"
+                  : "Próxima série"
+            }
+            onFinished={() => {
+              if (!model.demo)
+                void foregroundRest(session.id, deadline).catch(() => {});
+            }}
+          />
+        )}
+        {flow.phase === "overview" && (
+          <>
+            <h1>Seu treino</h1>
+            <p className="guided-subtitle">
+              Toque no exercício para abrir sua etapa.
+            </p>
+            <div className="guided-exercise-list">
+              {session.workout.exercises.map((e, i) => {
+                const done = sets.filter(
+                  (s) => s.payload.exerciseId === e.id,
+                ).length;
+                return (
+                  <button key={e.id} onClick={() => openExercise(e.id)}>
+                    <span>{i + 1}</span>
+                    <div>
+                      <b>{e.name}</b>
+                      <small>
+                        {session.skipped[e.id]
+                          ? "Pulado · " + session.skipped[e.id]
+                          : `${done}/${e.sets} séries válidas`}
+                      </small>
+                    </div>
+                    {done >= e.sets ? (
+                      <Check size={20} />
+                    ) : (
+                      <ArrowRight size={20} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              className="secondary guided-full"
+              onClick={() => go("review")}
+            >
+              {history ? "Ver resumo" : "Revisar e finalizar"}
+            </button>
+          </>
+        )}
+        {flow.phase === "records" && (
+          <>
+            <h1>Séries registradas</h1>
+            <p className="guided-subtitle">{exercise.name}</p>
+            {recorded.length === 0 ? (
+              <p>Nenhuma série registrada neste exercício.</p>
+            ) : (
+              <div className="guided-records">
+                {recorded.map((d) => (
+                  <div key={d.id}>
+                    <div>
+                      <b>Série {d.payload.index + 1}</b>
+                      <span>
+                        {d.payload.load} kg × {d.payload.reps} reps
+                        {d.payload.rir !== null
+                          ? ` · RIR ${d.payload.rir}`
+                          : ""}
+                      </span>
+                    </div>
+                    <button
+                      className="text-button"
+                      aria-label={"Editar série " + (d.payload.index + 1)}
+                      onClick={() => {
+                        setEditing(d.payload.index);
+                        go("work");
+                      }}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      className="icon"
+                      aria-label={"Retirar série " + (d.payload.index + 1)}
+                      onClick={() => setRemove(d)}
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button
+              className="primary guided-full"
+              onClick={() =>
+                history ? go("review") : (setEditing(null), go("work"))
+              }
+            >
+              {history ? "Voltar ao resumo" : "Voltar às séries válidas"}
+            </button>
+          </>
+        )}
+        {flow.phase === "review" && (
+          <>
+            <h1>{history ? "Treino concluído" : "Revisar treino"}</h1>
+            <p className="guided-subtitle">
+              {session.workout.name} · {formatDate(session.actualDate)}
+            </p>
+            <div className="guided-summary">
+              <b>
+                {sets.length}
+                <span>
+                  de {session.workout.exercises.reduce((n, e) => n + e.sets, 0)}{" "}
+                  séries registradas
+                </span>
+              </b>
+              <p>
+                {Object.keys(session.skipped).length} exercícios pulados
+                {history
+                  ? ` · ${Math.max(0, Math.round((Date.parse(session.finishedAt!) - Date.parse(session.startedAt)) / 60000))} min de sessão`
+                  : ""}
+              </p>
+            </div>
+            {!history && (
+              <p className="fine">
+                Séries não registradas ficam como não realizadas. Seus dados
+                sincronizam quando houver conexão.
+              </p>
+            )}
+            <button
+              className="secondary guided-full"
+              onClick={() => go("overview")}
+            >
+              {history ? "Ver e corrigir séries" : "Conferir exercícios"}
+            </button>
+            {history ? (
+              <button className="primary guided-full" onClick={onClose}>
+                Voltar para hoje
+              </button>
+            ) : (
+              <button
+                className="primary guided-full"
+                disabled={busy}
+                onClick={() =>
+                  void run(async () => {
+                    stopRest();
+                    await model.save(
+                      session.id,
+                      "session",
+                      { ...session, finishedAt: new Date().toISOString() },
+                      false,
+                      JSON.stringify(session),
+                    );
+                    localStorage.removeItem(key);
+                  })
+                }
+              >
+                {busy ? "Finalizando…" : "Finalizar treino"}
+              </button>
+            )}
+          </>
+        )}
+      </motion.div>
+      {skip && (
+        <Sheet title="Pular exercício" onClose={() => !busy && setSkip(false)}>
           <label>
             Motivo
             <input value={reason} onChange={(e) => setReason(e.target.value)} />
           </label>
           {error && (
-            <p className="error" role="alert">
+            <p role="alert" className="error">
               {error}
             </p>
           )}
           <button
             className="primary"
+            disabled={busy}
             onClick={() =>
-              attempt(async () => {
+              void run(async () => {
                 if (!reason.trim()) throw Error("Informe o motivo.");
-                await model.save(session.id, "session", {
-                  ...session,
-                  skipped: { ...session.skipped, [exercise.id]: reason },
-                });
+                await model.save(
+                  session.id,
+                  "session",
+                  {
+                    ...session,
+                    skipped: {
+                      ...session.skipped,
+                      [exercise.id]: reason.trim(),
+                    },
+                  },
+                  false,
+                  JSON.stringify(session),
+                );
                 setSkip(false);
-                if (index < session.workout.exercises.length - 1)
-                  setIndex(index + 1);
+                nextExercise();
               })
             }
           >
@@ -381,249 +794,192 @@ function WorkoutSession({
           </button>
         </Sheet>
       )}
-      {finish && !history && (
-        <Sheet title="Revisar e finalizar" onClose={() => setFinish(false)}>
+      {remove && (
+        <Sheet title="Retirar série" onClose={() => !busy && setRemove(null)}>
           <p>
-            {sets.length} de {total} séries registradas ·{" "}
-            {Object.keys(session.skipped).length} exercícios pulados.
-          </p>
-          <p>
-            Séries em branco ficam como não realizadas. Registros pendentes
-            serão enviados quando houver conexão.
+            Retirar a série {remove.payload.index + 1} de {exercise.name}? Ela
+            sairá da evolução e poderá ser desfeita nesta tela.
           </p>
           {error && (
-            <p className="error" role="alert">
+            <p role="alert" className="error">
               {error}
             </p>
           )}
           <button
             className="primary"
-            onClick={() =>
-              attempt(async () => {
-                await model.save(session.id, "session", {
-                  ...session,
-                  finishedAt: new Date().toISOString(),
-                });
-                timer(0);
-                onClose();
-              })
-            }
+            disabled={busy}
+            onClick={() => void removeSet()}
           >
-            Finalizar treino <Check size={18} />
+            Confirmar retirada da série
           </button>
         </Sheet>
       )}
     </div>
   );
 }
-function ExerciseEntry({
-  exercise: e,
-  session,
+function WarmupStage({
   model,
+  exercise,
+  target,
+  onTarget,
+  stageIndex,
+  busy,
+  onComplete,
+  onManual,
+}: {
+  model: Model;
+  exercise: Exercise;
+  target: string;
+  onTarget: (v: string) => void;
+  stageIndex: number;
+  busy: boolean;
+  onComplete: (s: { last: boolean; rest: number }) => void;
+  onManual: () => void;
+}) {
+  const [bar, setBar] = useState(
+      model.profile.barWeight === null ? "" : String(model.profile.barWeight),
+    ),
+    [error, setError] = useState("");
+  const stages = warmup(
+    Number(target.replace(",", ".")),
+    model.profile.barWeight,
+    model.profile.increment,
+    exercise.unit,
+    exercise.warm,
+  );
+  const i = Math.min(stageIndex, Math.max(0, stages.length - 1)),
+    stage = stages[i];
+  return (
+    <div className="warmup-only">
+      <p className="guided-note">
+        Antes do primeiro exercício, faça cerca de 3 minutos leves. As
+        aproximações abaixo não contam como séries válidas.
+      </p>
+      <details className="warmup-setup" open={!stage || undefined}>
+        <summary>Definir cargas do aquecimento</summary>
+        <label>
+          Carga prevista nas séries válidas · {unitLabel(exercise.unit)}
+          <input
+            aria-label="Carga de trabalho para aquecimento"
+            inputMode="decimal"
+            value={target}
+            onChange={(e) => onTarget(e.target.value)}
+            placeholder="Usar última carga registrada"
+          />
+        </label>
+        {exercise.unit === "bar" && model.profile.barWeight === null && (
+          <>
+            <label>
+              Peso real da barra em kg
+              <input
+                inputMode="decimal"
+                value={bar}
+                onChange={(e) => setBar(e.target.value)}
+                placeholder="Confirme na academia"
+              />
+            </label>
+            <button
+              className="secondary"
+              disabled={busy}
+              onClick={async () => {
+                setError("");
+                try {
+                  const n = Number(bar.replace(",", "."));
+                  if (!Number.isFinite(n) || n <= 0 || n > 100)
+                    throw Error("Informe o peso real da barra.");
+                  const p = visible(model.docs, "profile")[0];
+                  await model.save(
+                    p?.id ?? model.singletonIds?.profile ?? uid(),
+                    "profile",
+                    { ...model.profile, barWeight: n },
+                    false,
+                    p ? JSON.stringify(p.payload) : null,
+                  );
+                } catch (e) {
+                  setError((e as Error).message);
+                }
+              }}
+            >
+              Confirmar peso da barra
+            </button>
+          </>
+        )}
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
+      </details>
+      {stage ? (
+        <>
+          <p className="guided-position">
+            Aproximação {i + 1} de {stages.length}
+          </p>
+          <div className="warmup-prescription">
+            <b>
+              {stage.load}
+              <span>kg {exercise.unit === "bar" ? "no total" : ""}</span>
+            </b>
+            <b>
+              {stage.reps}
+              <span>repetições</span>
+            </b>
+          </div>
+          <p className="fine">
+            Sugestão ajustável. Use a montagem disponível e mantenha o esforço
+            confortável.
+          </p>
+          <button
+            className="primary guided-full"
+            disabled={busy}
+            onClick={() =>
+              onComplete({ last: i === stages.length - 1, rest: stage.rest })
+            }
+          >
+            {busy ? "Salvando…" : "Concluir aproximação " + (i + 1)}
+          </button>
+        </>
+      ) : (
+        <>
+          <p className="guided-note">
+            Defina a carga e, quando necessário, o peso da barra para calcular
+            as aproximações. Se você já aqueceu por conta própria, confirme
+            abaixo.
+          </p>
+          <button
+            className="primary guided-full"
+            disabled={busy}
+            onClick={onManual}
+          >
+            Já fiz meu aquecimento
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+function WorkingSetForm({
+  exercise,
+  index,
+  initial,
+  suggested,
   history,
-  attempt,
   onSave,
 }: {
   exercise: Exercise;
-  session: Session;
-  model: Model;
-  history: boolean;
-  attempt: (a: () => Promise<void>) => Promise<void>;
-  onSave: () => void;
-}) {
-  const reference = latestSet(model.docs, e, session.id);
-  const recorded = visible(model.docs, "set").filter(
-    (d) => d.payload.sessionId === session.id && d.payload.exerciseId === e.id,
-  );
-  const [active, setActive] = useState(
-    () =>
-      Array.from({ length: e.sets }, (_, i) => i).find(
-        (i) => !recorded.some((d) => d.payload.index === i),
-      ) ?? 0,
-  );
-  const [working, setWorking] = useState(
-    String(recorded[0]?.payload.load ?? reference?.load ?? ""),
-  );
-  const [custom, setCustom] = useState<Record<number, string>>({});
-  const stages = warmup(
-    Number(working.replace(",", ".")),
-    model.profile.barWeight,
-    model.profile.increment,
-    e.unit,
-    e.warm,
-  );
-  return (
-    <>
-      {e.warm !== "none" && (
-        <details className="warmup compact-warmup">
-          <summary>
-            Aquecimento{" "}
-            <span>
-              {stages.length
-                ? stages
-                    .map((s, i) => (custom[i] ?? s.load) + " kg")
-                    .join(" · ")
-                : "Definir cargas"}
-            </span>
-          </summary>
-          <label className="working-load">
-            Carga planejada · {unitLabel(e.unit)}
-            <input
-              aria-label="Carga para aquecimento"
-              inputMode="decimal"
-              value={working}
-              placeholder="kg"
-              onChange={(ev) => setWorking(ev.target.value)}
-            />
-          </label>
-          {stages.length ? (
-            <div className="warm-stages">
-              {stages.map((s, i) => (
-                <label key={i}>
-                  <span>
-                    {s.reps} reps · {s.rest}s
-                  </span>
-                  <input
-                    aria-label={"Carga da aproximação " + (i + 1)}
-                    inputMode="decimal"
-                    value={custom[i] ?? s.load}
-                    onChange={(ev) =>
-                      setCustom({ ...custom, [i]: ev.target.value })
-                    }
-                  />
-                  <span>kg</span>
-                </label>
-              ))}
-            </div>
-          ) : (
-            <p className="fine">
-              {e.unit === "bar" && !model.profile.barWeight
-                ? "Confirme o peso da barra em Ajustes; depois informe a carga planejada."
-                : "Informe a carga de trabalho para calcular."}
-            </p>
-          )}
-          <p className="fine">
-            Ajuste se necessário. No início da sessão, faça também 3 min leves.
-            Recupere antes da primeira série válida.
-          </p>
-        </details>
-      )}
-      <section className="series-entry">
-        <div className="series-heading">
-          <h2>
-            Série {active + 1} de {e.sets}
-          </h2>
-        </div>
-        {history && !recorded.some((d) => d.payload.index === active) ? (
-          <p className="fine">
-            Esta série não foi realizada. Em Ver séries, selecione um registro
-            para corrigir.
-          </p>
-        ) : (
-          <SeriesForm
-            key={active}
-            index={active}
-            exercise={e}
-            initial={recorded.find((d) => d.payload.index === active)}
-            suggested={working || String(reference?.load ?? "")}
-            onSubmit={(load, reps, rir) =>
-              attempt(async () => {
-                const values = validateSet(load, reps, rir);
-                if (
-                  e.unit === "bar" &&
-                  model.profile.barWeight !== null &&
-                  values.load < model.profile.barWeight
-                )
-                  throw Error("A carga total deve incluir a barra.");
-                const old = recorded.find((d) => d.payload.index === active);
-                await model.save(
-                  old?.id ?? (await setIdentity(session.id, e.id, active)),
-                  "set",
-                  {
-                    sessionId: session.id,
-                    exerciseId: e.id,
-                    index: active,
-                    ...values,
-                    machine: e.machine,
-                  },
-                );
-                setWorking(String(values.load));
-                if (!history) onSave();
-                const next = Array.from({ length: e.sets }, (_, i) => i).find(
-                  (i) =>
-                    i !== active &&
-                    !recorded.some((d) => d.payload.index === i),
-                );
-                if (next !== undefined) setActive(next);
-              })
-            }
-          />
-        )}
-        {reference && (
-          <p className="reference-note">
-            Última referência: {reference.load} kg × {reference.reps} reps
-            {reference.rir !== null ? " · RIR " + reference.rir : ""}
-          </p>
-        )}
-        <details className="series-history">
-          <summary>
-            Ver séries{" "}
-            <span>
-              {recorded.length}/{e.sets} feitas
-            </span>
-          </summary>
-          <div className="saved-series">
-            {Array.from({ length: e.sets }, (_, i) => {
-              const d = recorded.find((s) => s.payload.index === i);
-              return (
-                <button
-                  key={i}
-                  onClick={(ev) => {
-                    setActive(i);
-                    ev.currentTarget
-                      .closest("details")
-                      ?.removeAttribute("open");
-                  }}
-                  aria-label={
-                    d ? "Editar série " + (i + 1) : "Série " + (i + 1)
-                  }
-                  aria-current={active === i ? "step" : undefined}
-                >
-                  {d && <Check size={15} />}
-                  <span>{i + 1}ª</span>
-                  <b>
-                    {d
-                      ? `${d.payload.load} kg × ${d.payload.reps}`
-                      : "Sem registro"}
-                  </b>
-                  <small>
-                    {d?.payload.rir != null ? "RIR " + d.payload.rir : ""}
-                  </small>
-                  <span className="edit-link">
-                    {d ? "Editar" : "Selecionar"}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </details>
-      </section>
-    </>
-  );
-}
-function SeriesForm({
-  index,
-  exercise,
-  initial,
-  suggested,
-  onSubmit,
-}: {
   index: number;
-  exercise: Exercise;
-  initial: Entity | undefined;
+  initial?: Entity;
   suggested: string;
-  onSubmit: (a: string, b: string, c: string) => Promise<void>;
+  history: boolean;
+  onSave: (
+    load: string,
+    reps: string,
+    rir: string,
+    baseline: string | null,
+  ) => Promise<void>;
 }) {
+  const baseline = useRef(initial ? JSON.stringify(initial.payload) : null);
+  const repsInput = useRef<HTMLInputElement>(null);
   const [load, setLoad] = useState(
       initial ? String(initial.payload.load) : suggested,
     ),
@@ -631,76 +987,213 @@ function SeriesForm({
     [rir, setRir] = useState(
       initial?.payload.rir == null ? "" : String(initial.payload.rir),
     ),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
   return (
     <form
-      className="single-series-form"
-      onSubmit={async (ev) => {
-        ev.preventDefault();
+      className="guided-set-form"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (busy) return;
+        void unlockAlarm();
         setBusy(true);
+        setError("");
         try {
-          await onSubmit(load || suggested, reps, rir);
+          await onSave(load || suggested, reps, rir, baseline.current);
+        } catch (e) {
+          setError((e as Error).message);
         } finally {
           setBusy(false);
         }
       }}
     >
-      <div className="series-main-fields">
+      <div className="guided-number-fields">
         <label>
-          Carga <span className="field-unit">{unitLabel(exercise.unit)}</span>
+          Carga<span>{unitLabel(exercise.unit)}</span>
           <input
             aria-label={"Carga série " + (index + 1)}
             inputMode="decimal"
+            enterKeyHint="next"
+            onFocus={(e) => e.currentTarget.select()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                repsInput.current?.focus();
+              }
+            }}
             value={load}
-            placeholder={suggested || "—"}
             onChange={(e) => setLoad(e.target.value)}
+            placeholder="—"
           />
         </label>
         <label>
-          Repetições{" "}
-          <span className="field-unit">
-            meta: {exercise.min}–{exercise.max}
+          Repetições
+          <span>
+            Meta: {exercise.min}–{exercise.max}
           </span>
           <input
             aria-label={"Repetições série " + (index + 1)}
             inputMode="numeric"
+            ref={repsInput}
+            enterKeyHint="done"
+            onFocus={(e) => e.currentTarget.select()}
             value={reps}
-            placeholder="—"
             onChange={(e) => setReps(e.target.value)}
+            placeholder="—"
           />
         </label>
       </div>
       <details
-        className="rir-disclosure"
+        className="guided-rir"
         open={initial?.payload.rir != null || undefined}
       >
         <summary>
-          RIR <span>opcional</span>
+          Registrar RIR <span>opcional</span>
         </summary>
-        <label className="optional-rir">
-          <span>
-            RIR <small>opcional · quantas ainda conseguiria fazer?</small>
-          </span>
+        <label>
+          Repetições que ainda conseguiria fazer
           <input
             aria-label={"RIR série " + (index + 1) + " opcional"}
             inputMode="decimal"
             value={rir}
-            placeholder="—"
             onChange={(e) => setRir(e.target.value)}
+            placeholder="Deixe vazio se preferir"
           />
         </label>
       </details>
-      <button
-        className={(initial ? "secondary" : "primary") + " save-series"}
-        disabled={busy}
-      >
-        <Check size={19} />
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+      <button className="primary guided-full" disabled={busy}>
+        <Check size={18} />
         {busy
           ? "Salvando…"
-          : initial
+          : history
             ? "Salvar alteração da série " + (index + 1)
-            : "Salvar série " + (index + 1)}
+            : "Salvar série " + (index + 1) + " e descansar"}
       </button>
     </form>
+  );
+}
+function RestStage({
+  deadline,
+  seconds,
+  label,
+  sound,
+  onSound,
+  onTest,
+  onMore,
+  onDone,
+  nextLabel,
+  onFinished,
+}: {
+  deadline: number;
+  seconds: number;
+  label: string;
+  sound: boolean;
+  onSound: () => void;
+  onTest: () => void;
+  onMore: () => void;
+  onDone: () => void;
+  nextLabel: string;
+  onFinished: () => void;
+}) {
+  const [now, setNow] = useState(Date.now()),
+    sent = useRef(false);
+  const left = Math.max(0, Math.ceil((deadline - now) / 1000));
+  const ready = left === 0;
+  useEffect(() => {
+    const refresh = () => {
+      const current = Date.now();
+      setNow(current);
+      if (current >= deadline) clearInterval(timer);
+    };
+    const timer = setInterval(refresh, 1000);
+    const end = setTimeout(refresh, Math.max(0, deadline - Date.now()) + 20);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      clearInterval(timer);
+      clearTimeout(end);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [deadline]);
+  useEffect(() => {
+    if (
+      !ready ||
+      sent.current ||
+      document.visibilityState !== "visible" ||
+      Date.now() - deadline > 300000
+    )
+      return;
+    sent.current = true;
+    onFinished();
+  }, [ready, now, deadline, onFinished]);
+  return (
+    <div className="rest-only">
+      <p className="guided-position">{label}</p>
+      <h1>{ready ? "Descanso concluído" : "Hora de descansar"}</h1>
+      <p className="guided-subtitle">
+        {ready
+          ? "Continue quando estiver pronto."
+          : "Respire. A próxima etapa está preparada."}
+      </p>
+      <div className={"rest-dial " + (ready ? "is-ready" : "")}>
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <circle className="dial-track" cx="60" cy="60" r="54" />
+          <circle
+            className="dial-progress"
+            cx="60"
+            cy="60"
+            r="54"
+            style={{
+              strokeDasharray: 340,
+              strokeDashoffset:
+                340 * (1 - Math.min(1, left / Math.max(1, seconds))),
+            }}
+          />
+        </svg>
+        <div role="timer" aria-label={"Descanso: " + left + " segundos"}>
+          <b>
+            {Math.floor(left / 60)}:{String(left % 60).padStart(2, "0")}
+          </b>
+          <span>{ready ? <Check size={24} /> : <Clock3 size={22} />}</span>
+        </div>
+      </div>
+      {ready && (
+        <p className="rest-complete" role="status">
+          Descanso concluído.
+        </p>
+      )}
+      <button className="primary guided-full" onClick={onDone}>
+        {ready ? nextLabel : "Encerrar descanso agora"}
+        <ArrowRight size={18} />
+      </button>
+      {!ready && (
+        <button className="secondary guided-full" onClick={onMore}>
+          Adicionar 30 segundos
+        </button>
+      )}
+      <div className="rest-audio">
+        <button className="text-button" onClick={onSound}>
+          {sound ? <Volume2 size={18} /> : <VolumeX size={18} />}Som{" "}
+          {sound ? "ativado" : "desativado"}
+        </button>
+        <button className="text-button" onClick={onTest}>
+          Testar alarme
+        </button>
+      </div>
+      <details className="rest-help">
+        <summary>Sobre o som e os avisos</summary>
+        <p>
+          Toque em Testar alarme para liberar o som neste navegador. Com o app
+          aberto, o alarme acompanha o prazo. Com tela bloqueada, o aviso
+          depende das permissões, da conexão e do modo Foco do iPhone. A
+          contagem animada funciona dentro do app. Este app web não mostra
+          contagem ao vivo na tela bloqueada ou na Ilha Dinâmica.
+        </p>
+      </details>
+    </div>
   );
 }

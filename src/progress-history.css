@@ -1,0 +1,38 @@
+.progress-comparison {
+  margin-block: 24px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  min-width: 0;
+}
+.progress-comparison h2 {
+  margin-top: 0;
+}
+.progress-comparison-sessions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+.progress-comparison-sessions h3 {
+  font-size: 0.875rem;
+  margin: 0 0 8px;
+}
+.progress-comparison-sessions p {
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}
+.progress-comparison-sessions ol {
+  padding-left: 1.25rem;
+  margin: 12px 0 0;
+}
+.progress-comparison-sessions li {
+  margin-bottom: 6px;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 430px) {
+  .progress-comparison-sessions {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+}

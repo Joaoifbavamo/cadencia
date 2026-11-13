@@ -196,3 +196,39 @@ test("import cannot overwrite a pending cleanup and rolls back unrelated entries
     );
     assert.deepEqual(s.docs, before);
   }));
+
+test("imported session cannot orphan existing sets when an exercise is removed or shortened", () =>
+  withStore(async (s) => {
+    const id = crypto.randomUUID(),
+      p = session(id);
+    p.workout.exercises[0].sets = 2;
+    const set = {
+      id: crypto.randomUUID(),
+      kind: "set",
+      payload: {
+        sessionId: id,
+        exerciseId: p.workout.exercises[0].id,
+        index: 1,
+        load: 20,
+        reps: 8,
+        rir: null,
+        machine: "",
+      },
+    };
+    await s.importDocuments(backup([{ id, kind: "session", payload: p }, set]));
+    const before = structuredClone(s.docs);
+    const shortened = structuredClone(p);
+    shortened.workout.exercises[0].sets = 1;
+    await assert.rejects(
+      s.importDocuments(backup([{ id, kind: "session", payload: shortened }])),
+      /exercício/i,
+    );
+    assert.deepEqual(s.docs, before);
+    const removed = structuredClone(p);
+    removed.workout.exercises.shift();
+    await assert.rejects(
+      s.importDocuments(backup([{ id, kind: "session", payload: removed }])),
+      /exercício/i,
+    );
+    assert.deepEqual(s.docs, before);
+  }));

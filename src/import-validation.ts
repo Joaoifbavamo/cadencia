@@ -19,8 +19,17 @@ export function preflightImport(input: unknown, existing: Entity[]) {
       );
     combined.set(d.id, { ...d, deleted: false } as Entity);
   }
-  for (const d of documents) {
-    if (d.kind !== "set") continue;
+  const importedIds = new Set(documents.map((d) => d.id));
+  const importedSessions = new Set(
+    documents.filter((d) => d.kind === "session").map((d) => d.id),
+  );
+  for (const d of combined.values()) {
+    if (
+      d.kind !== "set" ||
+      d.deleted ||
+      (!importedIds.has(d.id) && !importedSessions.has(d.payload.sessionId))
+    )
+      continue;
     const parent = combined.get(d.payload.sessionId);
     if (!parent || parent.deleted || parent.kind !== "session")
       throw Error(

@@ -14,6 +14,10 @@ export default function Settings({
   onLogout: () => void;
   onInstall: () => void;
 }) {
+  const profile = visible(model.docs, "profile")[0];
+  const [profileBase, setProfileBase] = useState<string | null>(() =>
+    profile ? JSON.stringify(profile.payload) : null,
+  );
   const [bar, setBar] = useState(
     model.profile.barWeight === null ? "" : String(model.profile.barWeight),
   );
@@ -24,7 +28,6 @@ export default function Settings({
   const [summaries, setSummaries] = useState(false);
   const [busy, setBusy] = useState(false);
   const candidates = cleanupCandidates(model.docs, before);
-  const profile = visible(model.docs, "profile")[0];
   const attempt = async (fn: () => Promise<void>) => {
     setBusy(true);
     setMessage("");
@@ -84,11 +87,19 @@ export default function Settings({
                 inc > 100
               )
                 throw Error("Revise peso da barra e incremento.");
-              await model.save(profile?.id ?? uid(), "profile", {
+              const payload = {
                 ...model.profile,
                 barWeight: b,
                 increment: inc,
-              });
+              };
+              await model.save(
+                profile?.id ?? model.singletonIds?.profile ?? uid(),
+                "profile",
+                payload,
+                false,
+                profileBase,
+              );
+              setProfileBase(JSON.stringify(payload));
               setMessage("Preferências salvas localmente.");
             });
           }}
@@ -218,6 +229,71 @@ export default function Settings({
           Limpeza automática desligada. Sessões em andamento e a última
           referência de cada variação são preservadas.
         </p>
+        {model.cleanup?.job && (
+          <div className="feedback" role="status" aria-live="polite">
+            <p>{model.cleanup.job.message}</p>
+            <p>
+              {model.cleanup.job.processed} de {model.cleanup.job.total}{" "}
+              registros preparados · {model.cleanup.job.skipped} preservados
+              após mudanças.
+            </p>
+            <progress
+              value={model.cleanup.job.processed + model.cleanup.job.skipped}
+              max={Math.max(1, model.cleanup.job.total)}
+              aria-label="Progresso da limpeza"
+            />
+            {!["complete", "cancelled"].includes(model.cleanup.job.status) && (
+              <div className="button-row">
+                <button
+                  className="secondary"
+                  disabled={busy}
+                  onClick={() =>
+                    void attempt(async () => {
+                      await model.cleanup!.step();
+                    })
+                  }
+                >
+                  Continuar próximo lote
+                </button>
+                <button
+                  className="secondary"
+                  disabled={busy}
+                  onClick={() =>
+                    void attempt(async () => {
+                      await model.cleanup!.cancel();
+                    })
+                  }
+                >
+                  Cancelar restante
+                </button>
+              </div>
+            )}
+            {model.cleanup.job.recovery && (
+              <div>
+                <button
+                  className="secondary"
+                  disabled={
+                    busy || model.docs.some((d) => d.dirty || d.conflict)
+                  }
+                  onClick={() => void attempt(() => model.cleanup!.restore())}
+                >
+                  Restaurar último lote
+                </button>
+                <p className="fine">
+                  A restauração fica disponível após confirmar a sincronização
+                  das pendências, sem conflitos. Ela recupera somente o último
+                  lote neste aparelho e cancela o restante da limpeza. Continuar
+                  outro lote substitui esta recuperação local.
+                </p>
+              </div>
+            )}
+            <p className="fine">
+              O restante pode ser retomado após reabrir este aparelho. Cancelar
+              preserva registros ainda não preparados. Lotes já registrados
+              aguardam confirmação antes de poder restaurar o último lote.
+            </p>
+          </div>
+        )}
         <label>
           Registros anteriores a
           <input
@@ -261,6 +337,25 @@ export default function Settings({
           {message}
         </p>
       )}
+      {message.includes("mudou em outro lugar") && (
+        <button
+          className="secondary"
+          onClick={() => {
+            setBar(
+              model.profile.barWeight === null
+                ? ""
+                : String(model.profile.barWeight),
+            );
+            setIncrement(String(model.profile.increment));
+            setProfileBase(profile ? JSON.stringify(profile.payload) : null);
+            setMessage(
+              "Preferências atuais carregadas. Revise antes de salvar.",
+            );
+          }}
+        >
+          Carregar preferências atuais
+        </button>
+      )}
       {preview && (
         <Sheet title="Prévia da limpeza" onClose={() => setPreview(false)}>
           {message && (
@@ -274,9 +369,14 @@ export default function Settings({
             serão mantidos.
           </p>
           <p>
-            A exclusão dos detalhes não pode ser desfeita sem backup. Recomendo
-            exportar antes.
+            Apenas o último lote pode ser restaurado neste aparelho. Para
+            recuperar lotes anteriores, exporte um backup antes de continuar.
           </p>
+          {model.cleanup?.job?.recovery && (
+            <p>
+              Esta limpeza substituirá a recuperação local do lote anterior.
+            </p>
+          )}
           <button className="secondary" onClick={exportData}>
             Exportar backup
           </button>
@@ -284,45 +384,12 @@ export default function Settings({
             className="danger-button"
             disabled={busy || !candidates.length}
             onClick={() =>
-              attempt(async () => {
-                if (model.docs.some((d) => d.conflict))
-                  throw Error("Resolva conflitos antes da limpeza.");
-                const changes = [];
-                if (summaries) {
-                  const monthly = new Map<string, number>();
-                  for (const d of candidates.filter(
-                    (d) => d.kind === "session",
-                  )) {
-                    const m = d.payload.actualDate.slice(0, 7);
-                    monthly.set(m, (monthly.get(m) || 0) + 1);
-                  }
-                  for (const [month, n] of monthly) {
-                    const old = visible(model.docs, "summary").find(
-                      (d) => d.payload.month === month,
-                    );
-                    changes.push({
-                      id: old?.id ?? uid(),
-                      kind: "summary" as const,
-                      payload: {
-                        month,
-                        sessions: (old?.payload.sessions || 0) + n,
-                      },
-                    });
-                  }
-                }
-                // Summaries and tombstones enter one IndexedDB transaction and one cloud transaction.
-                await model.saveBatch([
-                  ...changes,
-                  ...candidates.map((d) => ({
-                    id: d.id,
-                    kind: d.kind,
-                    payload: d.payload,
-                    deleted: true,
-                  })),
-                ]);
+              void attempt(async () => {
+                if (!model.cleanup) throw Error("Armazenamento indisponível.");
+                await model.cleanup.start(before, summaries);
                 setPreview(false);
                 setMessage(
-                  "Limpeza registrada. Exclusões aguardam sincronização quando offline.",
+                  "Limpeza salva neste aparelho. Acompanhe os lotes abaixo.",
                 );
               })
             }

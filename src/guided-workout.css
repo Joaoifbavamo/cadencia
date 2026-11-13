@@ -1,0 +1,409 @@
+.guided-workout {
+  max-width: 640px;
+  margin: 0 auto;
+  min-width: 0;
+}
+.guided-workout *,
+.guided-workout input {
+  min-width: 0;
+}
+.guided-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  margin-bottom: 28px;
+}
+.guided-toolbar > div {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.guided-toolbar span {
+  font-size: 0.75rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.guided-toolbar b {
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+.guided-toolbar .icon {
+  flex: none;
+}
+.guided-stage {
+  min-width: 0;
+}
+.guided-stage h1 {
+  font-size: clamp(1.65rem, 6vw, 2.1rem);
+  line-height: 1.2;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.guided-subtitle {
+  font-size: 0.875rem;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 10px 0 26px;
+  overflow-wrap: anywhere;
+}
+.guided-position {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.guided-workout .guided-full {
+  display: flex;
+  width: 100%;
+  min-height: 54px;
+  border-radius: 14px;
+  margin-top: 16px;
+  gap: 10px;
+  padding: 14px 18px;
+  font-size: 0.9375rem;
+  white-space: normal;
+  text-align: center;
+}
+.guided-note {
+  font-size: 0.875rem;
+  color: var(--muted);
+  line-height: 1.7;
+  margin: 20px 0;
+}
+.warmup-setup {
+  margin: 18px 0 28px;
+  border-block: 1px solid var(--line);
+}
+.warmup-setup > summary {
+  padding: 14px 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.warmup-setup > label,
+.warmup-setup > button {
+  margin: 0 0 16px;
+}
+.warmup-prescription {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0 24px;
+}
+.warmup-prescription > b {
+  padding: 24px 16px;
+  background: var(--surface-alt);
+  border-radius: 18px;
+  font-size: 2.5rem;
+  line-height: 1.2;
+  font-weight: 650;
+}
+.warmup-prescription span {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin-top: 10px;
+}
+.stage-minor {
+  margin: 18px auto;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.guided-series-heading {
+  font-size: 1.125rem;
+  font-weight: 650;
+  margin: 26px 0 18px;
+}
+.guided-number-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+.guided-number-fields label {
+  gap: 0;
+  border-radius: 16px;
+  padding: 16px;
+  background: var(--surface-alt);
+  font-size: 0.875rem;
+}
+.guided-number-fields label > span {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--muted);
+  margin-top: 4px;
+  min-height: 24px;
+}
+.guided-number-fields input {
+  font-size: 2.3rem;
+  font-weight: 600;
+  line-height: 1.2;
+  border: 0;
+  background: transparent;
+  padding: 10px 0;
+  min-height: 68px;
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+.guided-rir {
+  margin: 12px 0 18px;
+}
+.guided-rir summary {
+  padding: 12px 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.guided-rir summary span {
+  margin-left: 6px;
+}
+.guided-reference {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--muted);
+  margin-top: 18px;
+}
+.guided-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  justify-content: space-between;
+  margin: 20px 0 10px;
+}
+.guided-secondary .text-button {
+  font-size: 0.8125rem;
+}
+.guided-instructions {
+  margin: 18px 0;
+  border-top: 1px solid var(--line);
+}
+.guided-instructions summary {
+  padding: 14px 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.guided-instructions p {
+  font-size: 0.875rem;
+  margin: 12px 0;
+  color: var(--muted);
+}
+.guided-exercise-list {
+  display: grid;
+  margin: 24px 0;
+}
+.guided-exercise-list > button {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  padding: 18px 0;
+  min-height: 76px;
+}
+.guided-exercise-list > button > span {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  flex: none;
+}
+.guided-exercise-list > button > div {
+  flex: 1;
+  min-width: 0;
+}
+.guided-exercise-list b {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.guided-exercise-list small {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.guided-exercise-list svg {
+  flex: none;
+}
+.guided-records > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+.guided-records > div > div {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+.guided-records b {
+  font-size: 0.875rem;
+}
+.guided-records span {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.guided-records .text-button {
+  font-size: 0.8125rem;
+}
+.guided-summary {
+  background: var(--surface-alt);
+  border-radius: 20px;
+  padding: 26px;
+  margin: 24px 0;
+}
+.guided-summary > b {
+  display: block;
+  font-size: 2.75rem;
+  line-height: 1.1;
+  font-weight: 650;
+}
+.guided-summary > b > span {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--muted);
+  font-weight: 500;
+  margin-top: 12px;
+}
+.guided-summary p {
+  margin-top: 20px;
+  font-size: 0.875rem;
+}
+.guided-feedback {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--surface-alt);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-size: 0.8125rem;
+}
+.rest-only {
+  text-align: center;
+}
+.rest-only .guided-subtitle {
+  margin-bottom: 14px;
+}
+.rest-dial {
+  width: min(74vw, 290px);
+  aspect-ratio: 1;
+  position: relative;
+  margin: 30px auto;
+}
+.rest-dial > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  overflow: visible;
+}
+.rest-dial > svg circle {
+  fill: none;
+  stroke-width: 3;
+}
+.dial-track {
+  stroke: var(--line);
+}
+.dial-progress {
+  stroke: var(--ink);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear;
+}
+.rest-dial > div {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 18px;
+}
+.rest-dial b {
+  font-size: clamp(3.5rem, 17vw, 5rem);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+.rest-dial > div > span {
+  color: var(--muted);
+  display: flex;
+}
+.rest-complete {
+  font-weight: 650;
+  font-size: 0.875rem;
+  margin-bottom: 16px;
+}
+.rest-audio {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.rest-audio .text-button {
+  font-size: 0.8125rem;
+}
+.rest-help {
+  text-align: left;
+  margin-top: 22px;
+}
+.rest-help summary {
+  padding: 12px 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+.rest-help p {
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  color: var(--muted);
+}
+@media (max-width: 760px) {
+  .training .main-column {
+    width: 100%;
+    min-width: 0;
+  }
+  .guided-toolbar {
+    margin-bottom: 24px;
+  }
+  .guided-stage {
+    padding-bottom: 20px;
+  }
+  .guided-workout input,
+  .guided-workout select {
+    max-width: 100%;
+  }
+  .warmup-prescription > b {
+    font-size: 2.25rem;
+  }
+  .guided-workout .error {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dial-progress {
+    transition: none;
+  }
+}
+
+.guided-completed {
+  padding: 22px 0;
+}
+.guided-completed h2 {
+  font-size: 1.25rem;
+  margin: 12px 0 8px;
+}
+.guided-completed p {
+  color: var(--muted);
+  font-size: 0.875rem;
+}

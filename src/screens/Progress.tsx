@@ -1,38 +1,14 @@
 import { useMemo, useState } from "react";
 import type { Model } from "../model.ts";
-import { type Exercise, visible, unitLabel } from "../domain.ts";
+import { unitLabel } from "../domain.ts";
+import { buildHistoryIndex, dailyLoads } from "../history-index.ts";
+import "../progress-history.css";
 import { Empty, formatDate } from "../components.tsx";
 export default function Progress({ model }: { model: Model }) {
   const [choice, setChoice] = useState("");
   const [period, setPeriod] = useState("90");
-  const sessions = visible(model.docs, "session");
-  const rows = useMemo(
-    () =>
-      visible(model.docs, "set").flatMap((d) => {
-        const session = sessions.find((s) => s.id === d.payload.sessionId);
-        const e: Exercise | undefined = session?.payload.workout.exercises.find(
-          (x: Exercise) => x.id === d.payload.exerciseId,
-        );
-        return e
-          ? [
-              {
-                ...d.payload,
-                date: session!.payload.actualDate,
-                exercise: e,
-                key: [
-                  e.id,
-                  e.name,
-                  e.unit,
-                  e.min,
-                  e.max,
-                  d.payload.machine,
-                ].join("|"),
-              },
-            ]
-          : [];
-      }),
-    [model.docs],
-  );
+  const history = useMemo(() => buildHistoryIndex(model.docs), [model.docs]);
+  const rows = history.rows;
   const options = [...new Map(rows.map((r) => [r.key, r])).values()];
   const selected = options.find((o) => o.key === choice) || options[0];
   const cutoff = new Date();
@@ -44,11 +20,10 @@ export default function Progress({ model }: { model: Model }) {
         (period === "0" || r.date >= cutoff.toISOString().slice(0, 10)),
     )
     .sort((a, b) => a.date.localeCompare(b.date) || a.index - b.index);
-  const dates = [...new Set(data.map((d) => d.date))];
-  const points = dates.map((date) => ({
-    date,
-    load: Math.max(...data.filter((d) => d.date === date).map((d) => d.load)),
-  }));
+  const points = dailyLoads(data);
+  const comparison = selected
+    ? (history.byComparison.get(selected.key)?.slice(0, 2) ?? [])
+    : [];
   const max = Math.max(...points.map((p) => p.load), 1),
     min = Math.min(...points.map((p) => p.load), max);
   const y = (v: number) => 170 - ((v - min) / (max - min || 1)) * 130;
@@ -92,6 +67,50 @@ export default function Progress({ model }: { model: Model }) {
               </select>
             </label>
           </div>
+          <section
+            className="progress-comparison"
+            aria-label="Comparação de sessões"
+          >
+            <h2>Últimas sessões comparáveis</h2>
+            <p className="fine">
+              Mesmo exercício, faixa, unidade e aparelho · histórico completo,
+              independente do período do gráfico.
+            </p>
+            <div className="progress-comparison-sessions">
+              {comparison.map((group, index) => (
+                <div key={group.sessionId}>
+                  <h3>
+                    {index === 0 ? "Mais recente" : "Anterior"} ·{" "}
+                    {formatDate(group.session.actualDate)}
+                  </h3>
+                  {!group.session.finishedAt && (
+                    <p className="fine">Treino em andamento</p>
+                  )}
+                  <p>
+                    {group.sets.length}{" "}
+                    {group.sets.length === 1
+                      ? "série registrada"
+                      : "séries registradas"}{" "}
+                    · {group.sets.reduce((sum, set) => sum + set.reps, 0)} reps
+                    no total
+                  </p>
+                  <ol>
+                    {group.sets.map((set) => (
+                      <li key={set.id} value={set.index + 1}>
+                        {set.load} kg × {set.reps} reps · RIR {set.rir ?? "—"}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              ))}
+            </div>
+            {comparison.length < 2 && (
+              <p className="muted">
+                Uma segunda sessão comparável permitirá conferir as séries lado
+                a lado.
+              </p>
+            )}
+          </section>
           <section className="chart-panel">
             <h2>Carga registrada</h2>
             <p className="muted">
@@ -164,8 +183,8 @@ export default function Progress({ model }: { model: Model }) {
                 </tr>
               </thead>
               <tbody>
-                {[...data].reverse().map((r, i) => (
-                  <tr key={i}>
+                {[...data].reverse().map((r) => (
+                  <tr key={r.id}>
                     <td>{formatDate(r.date)}</td>
                     <td>{r.index + 1}</td>
                     <td>{r.load} kg</td>

@@ -1,0 +1,49 @@
+/* Compact, direct numeric entry: persistent labels, no extra controls. */
+@media (max-width: 760px) {
+  .app-shell input:not([type="checkbox"]):not([type="radio"]),
+  .app-shell select,
+  .app-shell textarea {
+    border-radius: 12px;
+    min-height: 46px;
+    padding: 10px 12px;
+    font-size: 16px;
+    border-color: var(--line-strong);
+  }
+}
+.guided-workout .guided-number-fields {
+  gap: 12px;
+}
+.guided-workout .guided-number-fields label {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  font-size: 0.875rem;
+  gap: 3px;
+}
+.guided-workout .guided-number-fields label > span {
+  min-height: 22px;
+  font-size: 0.7rem;
+  margin-top: 0;
+}
+.guided-workout .guided-number-fields input {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  padding: 9px 13px;
+  min-height: 52px;
+  height: 52px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.guided-workout .guided-number-fields input:focus {
+  border-color: var(--ink);
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.guided-workout .guided-rir {
+  margin: 10px 0 8px;
+}
+.guided-workout .guided-series-heading {
+  margin: 22px 0 14px;
+}

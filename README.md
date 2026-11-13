@@ -70,6 +70,20 @@ O botão Voltar para hoje e a finalização agora realmente abrem Hoje, inclusiv
 
 Retirada reversível de pausados em Hoje/Agenda, Desfazer e Treinos retirados para restaurar. Sessões e séries retiradas não entram em evolução/referências; os dados continuam no backup. Importação local atômica e validada, proteção contra lote grande, correções no histórico concluído, mensagens dentro dos diálogos, guarda de edição não salva e recuperação após saída externa de conta.
 
-Glisse: lente/refração mais contidas e navegação memorizada com propriedades estáveis; a animação interna da biblioteca não foi sobrescrita por transições CSS concorrentes.
+Glisse: óptica e gestos da biblioteca preservados. A navegação é memorizada e desmontada quando invisível, durante o treino e no desktop, evitando trabalho de animação escondido.
 
 Verificações e sugestões priorizadas em [AUDITORIA.md](AUDITORIA.md). A revisão não valida entrega física de push nem suavidade em aparelho real.
+
+## Treino guiado e registro rápido — 13/11/2026
+
+O treino agora separa **aquecimento → uma série válida → descanso → próxima etapa**. Cada aproximação tem carga/repetições e descanso próprios. O peso real da barra precisa ser confirmado; nenhuma carga pessoal é inventada. O cronômetro ocupa uma tela própria, acompanha um prazo absoluto, anima o progresso e oferece +30 segundos, encerrar, som e teste de alarme. O RIR continua opcional e recolhido.
+
+Carga e repetições ficam lado a lado em campos compactos de 52px, arredondados, com teclado numérico. Tocar seleciona o valor para substituir; Enter na carga vai às repetições. A carga anterior é uma sugestão editável. As setinhas foram mantidas conforme a última orientação do usuário.
+
+O botão de lista abre todos os exercícios; o resumo informa séries registradas/puladas. Séries podem ser corrigidas ou retiradas com confirmação e Desfazer enquanto a tela estiver aberta. Sessões concluídas preservam a data e não iniciam descanso. A etapa em andamento retoma neste aparelho; os registros sincronizam entre aparelhos. O relógio é isolado para não redesenhar a ficha a cada segundo.
+
+Meu treino salva rascunho recuperável por conta; URLs representam a área/sessão e respeitam Voltar/Avançar. Evolução compara as duas sessões compatíveis mais recentes por série, carga, reps e RIR. Novos perfis/fichas recebem identidade estável por conta sem reescrever os registros existentes.
+
+A limpeza é opcional, em lotes de até 500 alterações, retomável neste aparelho. Cancelar interrompe o restante ainda não preparado. O último lote tem recuperação local após confirmação da sincronização e sem alterações concorrentes; avançar outro lote substitui essa recuperação. Exporte backup antes de limpar. Nenhum histórico pessoal foi limpo nesta implementação.
+
+**iPhone e tela bloqueada:** notificações Web Push podem avisar o fim do descanso se instaladas/permitidas, com conexão. O agendador trabalha por minuto; esse aviso pode atrasar e não é um alarme exato. Som em primeiro plano precisa ser liberado por toque. As Atividades ao Vivo/Ilha Dinâmica exigem um app iOS com ActivityKit, WidgetKit/SwiftUI; perfil e GitHub Pages não fornecem esse recurso. Não existe simulação de contagem bloqueada nesta versão. Fontes: [ActivityKit](https://developer.apple.com/documentation/ActivityKit), [Apple Web Push](https://developer.apple.com/documentation/usernotifications/sending-web-push-notifications-in-web-apps-and-browsers), [Web Audio](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices).

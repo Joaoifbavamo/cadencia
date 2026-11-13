@@ -6,11 +6,21 @@ import { demoPlan } from "../../src/demo.ts";
 import type { Entity, Kind } from "../../src/domain.ts";
 import type { Model } from "../../src/model.ts";
 import "../../src/styles.css";
+import "../../src/quick-entry.css";
 
 const mode = new URLSearchParams(location.search).get("mode");
 const workout = {
   ...demoPlan.workouts[0],
-  exercises: [{ ...demoPlan.workouts[0].exercises[0], sets: 1 }],
+  exercises: [
+    {
+      ...demoPlan.workouts[0].exercises[0],
+      sets: 1,
+      warm:
+        mode === "failure"
+          ? ("none" as const)
+          : demoPlan.workouts[0].exercises[0].warm,
+    },
+  ],
 };
 const entity = (id: string, kind: Kind, payload: unknown): Entity => ({
   id,
@@ -56,12 +66,19 @@ function Fixture() {
     docs,
     profile: { barWeight: 20, increment: 2.5, timezone: "America/Sao_Paulo" },
     demo: true,
-    save: async (id, kind, payload) => {
+    save: async (id, kind, payload, deleted = false, expectedPayload) => {
       if (mode === "failure") throw Error("Falha simulada ao salvar.");
-      if (mode === "editor-delay") await new Promise((resolve) => setTimeout(resolve, 400));
+      const current = docs.find((d) => d.id === id);
+      if (
+        expectedPayload !== undefined &&
+        (current ? JSON.stringify(current.payload) : null) !== expectedPayload
+      )
+        throw Error("O registro mudou em outro aparelho.");
+      if (mode === "editor-delay")
+        await new Promise((resolve) => setTimeout(resolve, 400));
       setDocs((all) => [
         ...all.filter((d) => d.id !== id),
-        entity(id, kind, payload),
+        { ...entity(id, kind, deleted ? {} : payload), deleted },
       ]);
     },
     saveBatch: async () => {},
@@ -89,14 +106,36 @@ function Fixture() {
       >
         Arquivar remotamente
       </button>
+      <button
+        onClick={() =>
+          setDocs((all) =>
+            all.map((d) =>
+              d.kind === "set"
+                ? {
+                    ...d,
+                    payload: { ...d.payload, load: 35 },
+                    version: d.version + 1,
+                  }
+                : d,
+            ),
+          )
+        }
+      >
+        Corrigir carga remotamente
+      </button>
       {closed ? (
         <p>Histórico fechado</p>
       ) : mode?.startsWith("editor") ? (
-        <PlanEditor model={model} onDirtyChange={setDirty} />
+        <PlanEditor
+          model={model}
+          accountKey={"fixture-" + mode}
+          onDirtyChange={setDirty}
+        />
       ) : (
         <Workout
           model={model}
           sessionId="review-session"
+          accountKey={"fixture-" + mode}
           onClose={() => setClosed(true)}
         />
       )}

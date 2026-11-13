@@ -56,6 +56,18 @@ O botão Voltar para hoje e a finalização agora realmente abrem Hoje, inclusiv
 
 Retirada reversível de pausados em Hoje/Agenda, Desfazer e Treinos retirados para restaurar. Sessões e séries retiradas não entram em evolução/referências; os dados continuam no backup. Importação local atômica e validada, proteção contra lote grande, correções no histórico concluído, mensagens dentro dos diálogos, guarda de edição não salva e recuperação após saída externa de conta.
 
-Glisse: lente/refração mais contidas e navegação memorizada com propriedades estáveis; a animação interna da biblioteca não foi sobrescrita por transições CSS concorrentes.
+Glisse: óptica e gestos da biblioteca preservados. A navegação é memorizada e desmontada quando invisível, durante o treino e no desktop, evitando trabalho de animação escondido.
 
 Verificações e sugestões priorizadas em [AUDITORIA.md](AUDITORIA.md). A revisão não valida entrega física de push nem suavidade em aparelho real.
+
+## Treino guiado e entrada compacta — 13/11/2026
+
+- 63 testes Node: zero falhas. Relógio controlado verifica som único, retomada do background, mute, cancelamento, prazo restaurado e contexto suspenso. Não constitui teste de som em iPhone físico.
+- Jornada real em demonstração isolada: aproximações → descanso → série válida → descanso → próximo exercício; lista, resumo, retirar/desfazer série, retomada por recarga e ausência de rolagem lateral320/375/390/430/676/1280px. Entrada de carga usa seleção e Enter para o campo reps. Suíte móvel adicional cobre1440px e RIR.
+- Regressões de histórico preservam finishedAt e não iniciam cronômetro; conflito de carga remota é preservado; erros de pulo/finalização visíveis; sessão retirada bloqueia edição. Rascunho recupera após recarga, Back cancelado preserva pilha, foco de teclado permanece correto.
+- Limpeza testada com mais de10000 registros, lotes ≤500, espera de confirmação, progresso persistido, grupo de sessão indivisível, mudanças concorrentes preservadas; recuperar último lote exige confirmação e reverte também o resumo mensal. Backup anterior continua necessário para lotes anteriores.
+- Chrome em produção: perfil servido, cronômetro concluído e primeira reabertura offline com cache HTTP desativado. Glisse mantém óptica e drag; largura real e insets testados. Medição da fixture em500ms:60 leituras de retângulos quando visível e0 quando desmontado. Isso não mede FPS em Safari físico.
+- Revisão cruzada encontrou e corrigiu sobrescrita concorrente em preferências/séries e importação que deixaria séries órfãs. A revisão de recuperação foi concluída pelo coordenador após indisponibilidade dos revisores; testes de conflito, recarga e transação passaram.
+- Detector Impeccable executado uma vez:140 avisos consultivos apenas de rampa de fontes/raios/cores; campos compactos, vidro e círculo de progresso são escolhas do pedido. Capturas foram inspecionadas e o ícone que herdava dimensões do círculo foi corrigido.
+- npm audit: zero vulnerabilidades na consulta desta revisão. Não houve migração Supabase, acesso a novos segredos ou alteração de dados pessoais.
+- ActivityKit pesquisado na documentação Apple: Atividades ao Vivo na tela bloqueada/Ilha Dinâmica requerem app iOS e extensão WidgetKit/SwiftUI. Esta versão web entrega contagem animada interna e Web Push existente de fim; agendamento por minuto pode atrasar. Não foi alegada notificação animada bloqueada, alarme nativo exato, teste físico ou entrega real de push.

@@ -7,18 +7,23 @@ const browser = await chromium.launch({
     : {}),
 });
 try {
-  const page = await browser.newPage();
+  const page = await browser.newPage({ reducedMotion: "reduce" });
   const open = async (mode) => {
     await page.goto(`${base}/tests/fixtures/workout-review.html?mode=${mode}`);
     await page.waitForLoadState("networkidle");
   };
   await open("history");
   await expect(
-    page.getByText("Treino concluído ·", { exact: false }),
+    page.getByRole("heading", { name: "Treino concluído", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Pular este exercício" }),
+    page.getByRole("button", { name: "Pular exercício", exact: true }),
   ).toHaveCount(0);
+  await page.getByRole("button", { name: "Ver e corrigir séries" }).click();
+  await page.locator(".guided-exercise-list button").first().click();
+  await page
+    .getByRole("button", { name: "Editar série 1", exact: true })
+    .click();
   await page
     .getByRole("textbox", { name: "Carga série 1", exact: true })
     .fill("22.5");
@@ -31,29 +36,62 @@ try {
   expect(documents.find((d) => d.kind === "session").payload.finishedAt).toBe(
     "2026-11-12T12:30:00Z",
   );
-  await page.getByRole("button", { name: "Fechar histórico" }).click();
+  await page
+    .getByRole("button", { name: "Voltar ao resumo", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Voltar para hoje", exact: true })
+    .last()
+    .click();
   await expect(page.getByText("Histórico fechado")).toBeVisible();
   console.log(
     "PASS historical correction preserves timestamp without a rest timer",
   );
 
+  await open("history");
+  await page.getByRole("button", { name: "Ver e corrigir séries" }).click();
+  await page.locator(".guided-exercise-list button").first().click();
+  await page
+    .getByRole("button", { name: "Editar série 1", exact: true })
+    .click();
+  await page
+    .getByRole("textbox", { name: "Carga série 1", exact: true })
+    .fill("25");
+  await page
+    .getByRole("button", { name: "Corrigir carga remotamente", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Salvar alteração da série 1", exact: true })
+    .click();
+  await expect(page.getByRole("alert")).toHaveText(
+    "O registro mudou em outro aparelho.",
+  );
+  await expect(page.locator("#documents")).toContainText('"load":35');
+  console.log(
+    "PASS remote set correction is preserved when an older form is saved",
+  );
   await open("failure");
-  await page.locator("details.instructions summary").click();
-  await page.getByRole("button", { name: "Pular este exercício" }).click();
+  await page.locator("details.guided-instructions summary").click();
+  await page
+    .getByRole("button", { name: "Pular exercício", exact: true })
+    .click();
   const sheet = page.getByRole("dialog", { name: "Pular exercício" });
   await sheet.getByRole("textbox", { name: "Motivo" }).fill("");
   await sheet.getByRole("button", { name: "Salvar e avançar" }).click();
   await expect(sheet.getByRole("alert")).toHaveText("Informe o motivo.");
   await sheet.getByRole("button", { name: "Fechar", exact: true }).click();
-  page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: "Revisar treino" }).click();
-  const finish = page.getByRole("dialog", { name: "Revisar e finalizar" });
-  await finish.getByRole("button", { name: "Finalizar treino" }).click();
-  await expect(finish.getByRole("alert")).toHaveText(
-    "Falha simulada ao salvar.",
-  );
+  await page
+    .getByRole("button", { name: "Ver exercícios do treino", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Revisar e finalizar", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Finalizar treino", exact: true })
+    .click();
+  await expect(page.getByRole("alert")).toHaveText("Falha simulada ao salvar.");
   console.log(
-    "PASS skip validation and finalization failure stay inside their dialogs",
+    "PASS skip validation stays inside its dialog and finalization failure stays on review",
   );
 
   await open("active");
@@ -80,9 +118,13 @@ try {
     "PASS editor reports unsaved changes, successful save, and expanded state",
   );
   await open("editor-delay");
-  await page.getByRole("textbox", { name: "Nome da ficha" }).fill("Ficha enviada");
+  await page
+    .getByRole("textbox", { name: "Nome da ficha" })
+    .fill("Ficha enviada");
   await page.getByRole("button", { name: "Salvar ficha" }).click();
-  await page.getByRole("textbox", { name: "Nome da ficha" }).fill("Nova edição durante salvamento");
+  await page
+    .getByRole("textbox", { name: "Nome da ficha" })
+    .fill("Nova edição durante salvamento");
   await expect(page.locator("#documents")).toContainText("Ficha enviada");
   await expect(page.locator("#dirty")).toHaveText("true");
   const prevented = await page.evaluate(() => {
