@@ -65,3 +65,11 @@ Agenda permite corrigir as datas realizada e prevista e editar cardio usando o m
 Glisse **0.6.0**, instalado do npm oficial, fornece a barra móvel TabBar e o botão de troca; o conteúdo sob o vidro é marcado pelo mecanismo documentado da biblioteca. A cor de destaque herda o preto/branco. Movimento/transparência reduzidos ou maior contraste usam navegação estática; não aplicamos vidro aos campos de séries. Licença MIT entregue em public/Glisse-LICENSE.txt. Fonte: https://glisse.kelvinzhang.ca/ e https://github.com/0kzh/glisse. Vite atualizado para 7.3.8 após auditoria identificar avisos na ferramenta de desenvolvimento; auditoria completa sem vulnerabilidades após a atualização.
 
 O botão Voltar para hoje e a finalização agora realmente abrem Hoje, inclusive quando a sessão começou pela Agenda; o teste de regressão cobre esse caminho.
+
+## Varredura Superpowers — 13/11/2026
+
+Retirada reversível de pausados em Hoje/Agenda, Desfazer e Treinos retirados para restaurar. Sessões e séries retiradas não entram em evolução/referências; os dados continuam no backup. Importação local atômica e validada, proteção contra lote grande, correções no histórico concluído, mensagens dentro dos diálogos, guarda de edição não salva e recuperação após saída externa de conta.
+
+Glisse: lente/refração mais contidas e navegação memorizada com propriedades estáveis; a animação interna da biblioteca não foi sobrescrita por transições CSS concorrentes.
+
+Verificações e sugestões priorizadas em [AUDITORIA.md](AUDITORIA.md). A revisão não valida entrega física de push nem suavidade em aparelho real.

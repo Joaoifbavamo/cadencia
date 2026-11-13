@@ -2772,4 +2772,53 @@ th {
     display: none;
   }
 }
-.change-workout { min-height:44px; padding-inline:14px; }
+.change-workout {
+  min-height: 44px;
+  padding-inline: 14px;
+}
+.retire-workout {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin-top: 10px;
+}
+.paused-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-top: 1px solid var(--line);
+}
+.paused-row .workout-choice {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+}
+.paused-row .retire-workout {
+  flex: none;
+  margin: 0;
+}
+.archive-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+.archive-row p {
+  margin: 6px 0 0;
+}
+.archive-feedback {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.archived-access {
+  margin: 10px 0 20px;
+}
+.glisse-nav .lg-tab-bar {
+  --lg-lens-grow-x: 12px;
+  --lg-lens-grow-y: 8px;
+  --lg-glass-bend: 0.3;
+}

@@ -51,3 +51,11 @@ Revisão independente desta simplificação: ship, sem correções materiais, co
 - Auditoria completa npm: zero vulnerabilidades após Vite 7.3.8. Não houve migração de banco, acesso a novos segredos nem mudança de permissões. Teste físico de óptica/movimento no Safari do iPhone continua não realizado.
 
 O botão Voltar para hoje e a finalização agora realmente abrem Hoje, inclusive quando a sessão começou pela Agenda; o teste de regressão cobre esse caminho.
+
+## Varredura Superpowers — 13/11/2026
+
+Retirada reversível de pausados em Hoje/Agenda, Desfazer e Treinos retirados para restaurar. Sessões e séries retiradas não entram em evolução/referências; os dados continuam no backup. Importação local atômica e validada, proteção contra lote grande, correções no histórico concluído, mensagens dentro dos diálogos, guarda de edição não salva e recuperação após saída externa de conta.
+
+Glisse: lente/refração mais contidas e navegação memorizada com propriedades estáveis; a animação interna da biblioteca não foi sobrescrita por transições CSS concorrentes.
+
+Verificações e sugestões priorizadas em [AUDITORIA.md](AUDITORIA.md). A revisão não valida entrega física de push nem suavidade em aparelho real.

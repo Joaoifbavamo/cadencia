@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { TabBar } from "glisse";
 import type { ReactNode } from "react";
-export default function MobileNavigation({
+export default memo(function MobileNavigation({
   items,
   value,
   onChange,
@@ -57,4 +57,4 @@ export default function MobileNavigation({
       )}
     </nav>
   );
-}
+});

@@ -27,6 +27,7 @@ export default function Settings({
   const profile = visible(model.docs, "profile")[0];
   const attempt = async (fn: () => Promise<void>) => {
     setBusy(true);
+    setMessage("");
     try {
       await fn();
     } catch (e) {
@@ -195,8 +196,7 @@ export default function Settings({
                   )
                 )
                   return;
-                for (const d of input.documents)
-                  await model.save(d.id, d.kind, d.payload);
+                await model.importDocuments(input);
                 setMessage(
                   "Importação salva localmente. Confira a sincronização.",
                 );
@@ -237,7 +237,10 @@ export default function Settings({
         <button
           className="secondary"
           disabled={!before || busy}
-          onClick={() => setPreview(true)}
+          onClick={() => {
+            setMessage("");
+            setPreview(true);
+          }}
         >
           Ver prévia da limpeza
         </button>
@@ -260,6 +263,11 @@ export default function Settings({
       )}
       {preview && (
         <Sheet title="Prévia da limpeza" onClose={() => setPreview(false)}>
+          {message && (
+            <p className="error" role="alert">
+              {message}
+            </p>
+          )}
           <p>
             {candidates.length} registros anteriores a {before} poderão ser
             removidos. Os últimos treinos usados como referência e rascunhos

@@ -13,5 +13,6 @@ export interface Model {
   saveBatch: (
     changes: { id: string; kind: Kind; payload: any; deleted?: boolean }[],
   ) => Promise<void>;
+  importDocuments: (input: unknown) => Promise<void>;
   refresh: () => void;
 }

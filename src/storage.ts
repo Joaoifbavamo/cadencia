@@ -1,5 +1,6 @@
 import { uid, type Entity, type Kind } from "./domain.ts";
 import { editEntity, acknowledge, mergeRemote } from "./merge.ts";
+import { preflightImport } from "./import-validation.ts";
 type Change = { id: string; kind: Kind; payload: any; deleted?: boolean };
 export class LocalStore {
   private db: IDBDatabase | null = null;
@@ -85,6 +86,8 @@ export class LocalStore {
     let result!: Entity;
     await this.atomic((docs) => {
       const old = docs.find((d) => d.id === id);
+      if (old && old.kind !== kind)
+        throw Error("Não é possível alterar o tipo de um registro existente.");
       if (
         expectedPayload !== undefined &&
         (old ? JSON.stringify(old.payload) : null) !== expectedPayload
@@ -114,6 +117,10 @@ export class LocalStore {
     return result;
   }
   async batch(changes: Change[]) {
+    if (changes.length > 10000)
+      throw Error(
+        "A limpeza aceita até 10.000 registros por vez. Escolha uma data mais antiga para remover um período menor e tente novamente.",
+      );
     await this.atomic((docs) => {
       if (docs.some((d) => d.batchId && d.dirty))
         throw Error(
@@ -122,6 +129,10 @@ export class LocalStore {
       const batchId = uid();
       return changes.map((d) => {
         const old = docs.find((e) => e.id === d.id);
+        if (old && old.kind !== d.kind)
+          throw Error(
+            "Não é possível alterar o tipo de um registro existente.",
+          );
         return {
           ...(old
             ? editEntity(old, d.deleted ? {} : d.payload, !!d.deleted)
@@ -137,6 +148,25 @@ export class LocalStore {
               }),
           batchId,
         } as Entity;
+      });
+    });
+  }
+  async importDocuments(input: unknown) {
+    await this.atomic((docs) => {
+      const documents = preflightImport(input, docs);
+      return documents.map((d) => {
+        const old = docs.find((e) => e.id === d.id);
+        return old
+          ? editEntity(old, d.payload, false)
+          : {
+              ...d,
+              version: 0,
+              change_seq: 0,
+              deleted: false,
+              dirty: true,
+              localSeq: 1,
+              mutationId: uid(),
+            };
       });
     });
   }

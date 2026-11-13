@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus, ChevronDown, ChevronUp, Trash2, Save } from "lucide-react";
 import type { Model } from "../model.ts";
 import { download } from "../components.tsx";
@@ -24,7 +24,13 @@ const blankExercise = (): Exercise => ({
   alternative: "",
   machine: "",
 });
-export default function PlanEditor({ model }: { model: Model }) {
+export default function PlanEditor({
+  model,
+  onDirtyChange,
+}: {
+  model: Model;
+  onDirtyChange?: (dirty: boolean) => void;
+}) {
   const existing = visible(model.docs, "plan")[0];
   const [plan, setPlan] = useState<Plan>(() =>
     structuredClone(
@@ -32,14 +38,30 @@ export default function PlanEditor({ model }: { model: Model }) {
     ),
   );
   const [message, setMessage] = useState("");
+  const latestPlan = useRef(plan);
+  latestPlan.current = plan;
   const [base, setBase] = useState<string | null>(
     existing ? JSON.stringify(existing.payload) : null,
   );
   const [open, setOpen] = useState("");
+  const [dirty, setDirty] = useState(false);
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
   const change = (fn: (p: Plan) => void) => {
     const p = structuredClone(plan);
     fn(p);
     setPlan(p);
+    setDirty(true);
     setMessage("Alterações ainda não salvas.");
   };
   const days = [
@@ -74,8 +96,13 @@ export default function PlanEditor({ model }: { model: Model }) {
                 );
               await model.save(plan.id, "plan", plan, false, base);
               setBase(JSON.stringify(plan));
+              const stillDirty =
+                JSON.stringify(latestPlan.current) !== JSON.stringify(plan);
+              setDirty(stillDirty);
               setMessage(
-                "Ficha salva neste dispositivo. Veja a sincronização no topo.",
+                stillDirty
+                  ? "Ficha salva. Há novas alterações ainda não salvas."
+                  : "Ficha salva neste dispositivo. Veja a sincronização no topo.",
               );
             } catch (e) {
               setMessage((e as Error).message);
@@ -116,6 +143,7 @@ export default function PlanEditor({ model }: { model: Model }) {
               if (existing) {
                 setPlan(structuredClone(existing.payload));
                 setBase(JSON.stringify(existing.payload));
+                setDirty(false);
                 setMessage("Ficha atual carregada.");
               }
             }}
@@ -187,6 +215,8 @@ export default function PlanEditor({ model }: { model: Model }) {
             <div className="editor-exercise" key={e.id}>
               <button
                 className="editor-summary"
+                aria-expanded={open === e.id}
+                aria-controls={"exercise-fields-" + e.id}
                 onClick={() => setOpen(open === e.id ? "" : e.id)}
               >
                 <span className="row-order">{ei + 1}</span>
@@ -199,7 +229,7 @@ export default function PlanEditor({ model }: { model: Model }) {
                 <ChevronDown size={19} />
               </button>
               {open === e.id && (
-                <div className="exercise-fields">
+                <div className="exercise-fields" id={"exercise-fields-" + e.id}>
                   <label className="wide">
                     Nome específico
                     <input

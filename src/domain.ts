@@ -34,6 +34,7 @@ export interface Session {
   plannedDate: string;
   startedAt: string;
   finishedAt?: string;
+  archivedAt?: string;
   skipped: Record<string, string>;
 }
 export interface SetLog {
@@ -216,10 +217,15 @@ export function isExercise(x: any): x is Exercise {
     x.sets <= 10 &&
     Number.isInteger(x.min) &&
     x.min >= 1 &&
+    Number.isInteger(x.max) &&
     x.max >= x.min &&
     x.max <= 200 &&
+    typeof x.rir === "number" &&
+    Number.isFinite(x.rir) &&
     x.rir >= 0 &&
     x.rir <= 10 &&
+    typeof x.rest === "number" &&
+    Number.isFinite(x.rest) &&
     x.rest >= 15 &&
     x.rest <= 600 &&
     ["bar", "dumbbell", "machine", "body"].includes(x.unit) &&
@@ -229,98 +235,121 @@ export function isExercise(x: any): x is Exercise {
 }
 export function validPayload(kind: Kind, p: any): boolean {
   if (!p || typeof p !== "object") return false;
-  switch (kind) {
-    case "plan":
-      return (
-        typeof p.id === "string" &&
-        typeof p.name === "string" &&
-        Array.isArray(p.workouts) &&
-        p.workouts.length <= 14 &&
-        p.workouts.every(
-          (w: any) =>
-            typeof w.id === "string" &&
-            typeof w.name === "string" &&
-            Number.isInteger(w.day) &&
-            w.day >= 0 &&
-            w.day <= 6 &&
-            Array.isArray(w.exercises) &&
-            w.exercises.length <= 30 &&
-            w.exercises.every(isExercise),
-        )
-      );
-    case "set":
-      try {
-        validateSet(
-          String(p.load),
-          String(p.reps),
-          p.rir === null ? "" : String(p.rir),
-        );
+  try {
+    switch (kind) {
+      case "plan":
         return (
-          typeof p.sessionId === "string" &&
-          typeof p.exerciseId === "string" &&
-          Number.isInteger(p.index) &&
-          p.index >= 0 &&
-          p.index < 10 &&
-          typeof p.machine === "string"
+          typeof p.id === "string" &&
+          typeof p.name === "string" &&
+          Array.isArray(p.workouts) &&
+          p.workouts.length <= 14 &&
+          p.workouts.every(
+            (w: any) =>
+              typeof w.id === "string" &&
+              typeof w.name === "string" &&
+              Number.isInteger(w.day) &&
+              w.day >= 0 &&
+              w.day <= 6 &&
+              Array.isArray(w.exercises) &&
+              w.exercises.length <= 30 &&
+              w.exercises.every(isExercise),
+          )
         );
-      } catch {
+      case "set":
+        if (
+          typeof p.load !== "number" ||
+          typeof p.reps !== "number" ||
+          (p.rir !== null && typeof p.rir !== "number")
+        )
+          return false;
+        try {
+          validateSet(
+            String(p.load),
+            String(p.reps),
+            p.rir === null ? "" : String(p.rir),
+          );
+          return (
+            typeof p.sessionId === "string" &&
+            typeof p.exerciseId === "string" &&
+            Number.isInteger(p.index) &&
+            p.index >= 0 &&
+            p.index < 10 &&
+            typeof p.machine === "string"
+          );
+        } catch {
+          return false;
+        }
+      case "session":
+        return (
+          typeof p.id === "string" &&
+          typeof p.planId === "string" &&
+          dateValid(p.actualDate) &&
+          dateValid(p.plannedDate) &&
+          typeof p.startedAt === "string" &&
+          Number.isFinite(Date.parse(p.startedAt)) &&
+          (!p.finishedAt || Number.isFinite(Date.parse(p.finishedAt))) &&
+          p.skipped &&
+          typeof p.skipped === "object" &&
+          !Array.isArray(p.skipped) &&
+          Object.values(p.skipped).every((v) => typeof v === "string") &&
+          (p.archivedAt === undefined ||
+            (typeof p.archivedAt === "string" &&
+              Number.isFinite(Date.parse(p.archivedAt)))) &&
+          validPayload("plan", {
+            id: p.planId,
+            name: "snapshot",
+            workouts: [p.workout],
+          })
+        );
+      case "activity":
+        return (
+          dateValid(p.date) &&
+          typeof p.name === "string" &&
+          p.name.length > 0 &&
+          typeof p.minutes === "number" &&
+          Number.isFinite(p.minutes) &&
+          p.minutes >= 1 &&
+          p.minutes <= 1440 &&
+          typeof p.notes === "string"
+        );
+      case "profile":
+        return (
+          (p.todayChoice === undefined ||
+            (dateValid(p.todayChoice.date) &&
+              dateValid(p.todayChoice.plannedDate) &&
+              typeof p.todayChoice.workoutId === "string" &&
+              p.todayChoice.workoutId.length > 0 &&
+              p.todayChoice.workoutId.length <= 200)) &&
+          (p.barWeight === null ||
+            (typeof p.barWeight === "number" &&
+              Number.isFinite(p.barWeight) &&
+              p.barWeight > 0 &&
+              p.barWeight <= 100)) &&
+          typeof p.increment === "number" &&
+          Number.isFinite(p.increment) &&
+          p.increment > 0 &&
+          p.increment <= 100 &&
+          typeof p.timezone === "string" &&
+          (() => {
+            try {
+              new Intl.DateTimeFormat("pt-BR", { timeZone: p.timezone });
+              return true;
+            } catch {
+              return false;
+            }
+          })()
+        );
+      case "summary":
+        return (
+          typeof p.month === "string" &&
+          Number.isInteger(p.sessions) &&
+          p.sessions >= 0
+        );
+      default:
         return false;
-      }
-    case "session":
-      return (
-        typeof p.id === "string" &&
-        typeof p.planId === "string" &&
-        dateValid(p.actualDate) &&
-        dateValid(p.plannedDate) &&
-        typeof p.startedAt === "string" &&
-        Number.isFinite(Date.parse(p.startedAt)) &&
-        (!p.finishedAt || Number.isFinite(Date.parse(p.finishedAt))) &&
-        p.skipped &&
-        typeof p.skipped === "object" &&
-        validPayload("plan", {
-          id: p.planId,
-          name: "snapshot",
-          workouts: [p.workout],
-        })
-      );
-    case "activity":
-      return (
-        dateValid(p.date) &&
-        typeof p.name === "string" &&
-        p.name.length > 0 &&
-        p.minutes >= 1 &&
-        p.minutes <= 1440 &&
-        typeof p.notes === "string"
-      );
-    case "profile":
-      return (
-        (p.todayChoice === undefined ||
-          (dateValid(p.todayChoice.date) &&
-            dateValid(p.todayChoice.plannedDate) &&
-            typeof p.todayChoice.workoutId === "string" &&
-            p.todayChoice.workoutId.length > 0 &&
-            p.todayChoice.workoutId.length <= 200)) &&
-        (p.barWeight === null || (p.barWeight > 0 && p.barWeight <= 100)) &&
-        p.increment > 0 &&
-        p.increment <= 100 &&
-        typeof p.timezone === "string" &&
-        (() => {
-          try {
-            new Intl.DateTimeFormat("pt-BR", { timeZone: p.timezone });
-            return true;
-          } catch {
-            return false;
-          }
-        })()
-      );
-    case "summary":
-      return (
-        typeof p.month === "string" &&
-        Number.isInteger(p.sessions) &&
-        p.sessions >= 0
-      );
-    default:
-      return false;
+    }
+  } catch {
+    return false;
   }
 }
 export function validateImport(input: any): {
@@ -348,8 +377,33 @@ export function validateImport(input: any): {
   }
   return input;
 }
-export const visible = (docs: Entity[], kind: Kind) =>
-  docs.filter((d) => d.kind === kind && !d.deleted);
+export function visible(docs: Entity[], kind: Kind) {
+  const found = docs.filter((d) => d.kind === kind && !d.deleted);
+  if (kind === "session") return found.filter((d) => !d.payload.archivedAt);
+  if (kind === "set") {
+    const archived = new Set(
+      docs
+        .filter((d) => d.kind === "session" && d.payload?.archivedAt)
+        .map((d) => d.id),
+    );
+    return found.filter((d) => !archived.has(d.payload.sessionId));
+  }
+  return found;
+}
+export function archivePausedSession(
+  session: Session,
+  at = new Date().toISOString(),
+): Session {
+  if (session.finishedAt)
+    throw Error("Somente treinos pausados podem ser retirados.");
+  if (!Number.isFinite(Date.parse(at)))
+    throw Error("Data de retirada inválida.");
+  return { ...session, archivedAt: at };
+}
+export function restoreArchivedSession(session: Session): Session {
+  const { archivedAt, ...rest } = session;
+  return rest;
+}
 export function latestSet(
   docs: Entity[],
   exercise: Exercise,

@@ -215,3 +215,16 @@ export async function testPush() {
       "O serviço não confirmou o envio. Reconecte este aparelho e tente novamente.",
     );
 }
+
+export async function cancelRestForSession(sessionId: string) {
+  const row = await currentPush();
+  if (!row) return;
+  const { error } = await supabase
+    .from("push_jobs")
+    .delete()
+    .eq("subscription_id", row.id)
+    .eq("kind", "rest")
+    .is("delivered_at", null)
+    .like("tag", "rest-" + sessionId + "-%");
+  if (error) throw Error("Não foi possível cancelar o aviso remoto.");
+}

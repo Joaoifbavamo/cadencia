@@ -1,5 +1,5 @@
 import MobileNavigation from "./MobileNavigation.tsx";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CalendarDays,
   ChartNoAxesCombined,
@@ -46,12 +46,24 @@ const defaults: Profile = {
   increment: 2.5,
   timezone: "America/Sao_Paulo",
 };
+const NAV_ITEMS = [
+  { name: "Hoje", icon: House },
+  { name: "Agenda", icon: CalendarDays },
+  { name: "Evolução", icon: ChartNoAxesCombined },
+  { name: "Meu treino", icon: Dumbbell },
+  { name: "Instalar", icon: Download },
+];
+const MOBILE_ITEMS = NAV_ITEMS.map((n) => ({
+  name: n.name,
+  icon: <n.icon size={22} />,
+}));
 export default function App() {
   const [account, setAccount] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(false);
   const [, render] = useState(0);
   const [tab, setTab] = useState("Hoje");
+  const [planDirty, setPlanDirty] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState<Entity | null>(null);
@@ -76,6 +88,8 @@ export default function App() {
       if (event === "SIGNED_OUT") {
         setSessionId(null);
         setReady(false);
+        setAccount(null);
+        setPlanDirty(false);
       }
       if (event === "SIGNED_IN" || event === "INITIAL_SESSION")
         setAccount(s?.user.id ?? null);
@@ -161,6 +175,29 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [tab, sessionId]);
+  const navigate = useCallback(
+    (next: string) => {
+      if (next === tab && !sessionId) return;
+      if (
+        tab === "Meu treino" &&
+        planDirty &&
+        !confirm(
+          "Sua ficha tem alterações não salvas. Sair e descartar essas alterações?",
+        )
+      )
+        return;
+      setPlanDirty(false);
+      setTab(next);
+      setSessionId(null);
+    },
+    [tab, planDirty, sessionId],
+  );
+  async function importDocuments(input: unknown) {
+    if (!store.current) throw Error("Armazenamento indisponível.");
+    await store.current.importDocuments(input);
+    refresh();
+    void engine.current?.run();
+  }
   async function saveBatch(
     changes: { id: string; kind: Kind; payload: any; deleted?: boolean }[],
   ) {
@@ -177,6 +214,18 @@ export default function App() {
     deleted = false,
     expectedPayload?: string | null,
   ) {
+    if (
+      kind === "set" &&
+      store.current?.docs.some(
+        (d) =>
+          d.id === payload.sessionId &&
+          d.kind === "session" &&
+          d.payload.archivedAt,
+      )
+    )
+      throw Error(
+        "Este treino foi retirado. Restaure antes de alterar suas séries.",
+      );
     if (!validPayload(kind, payload))
       throw Error("Revise os campos antes de salvar.");
     if (!store.current) throw Error("Armazenamento indisponível.");
@@ -282,6 +331,7 @@ export default function App() {
     demo: account === "demo",
     save,
     saveBatch,
+    importDocuments,
     refresh,
   };
   const dirty = docs.filter((d) => d.dirty).length;
@@ -300,13 +350,7 @@ export default function App() {
               : dirty
                 ? `${dirty} pendente${dirty > 1 ? "s" : ""}`
                 : "Sincronizado";
-  const nav = [
-    { name: "Hoje", icon: House },
-    { name: "Agenda", icon: CalendarDays },
-    { name: "Evolução", icon: ChartNoAxesCombined },
-    { name: "Meu treino", icon: Dumbbell },
-    { name: "Instalar", icon: Download },
-  ];
+  const nav = NAV_ITEMS;
   return (
     <div className={"app-shell " + (sessionId ? "training" : "")}>
       <aside className="sidebar">
@@ -315,7 +359,7 @@ export default function App() {
           href="#"
           onClick={(e) => {
             e.preventDefault();
-            setTab("Hoje");
+            navigate("Hoje");
             setSessionId(null);
           }}
         >
@@ -331,7 +375,7 @@ export default function App() {
               className={tab === n.name && !sessionId ? "active" : ""}
               aria-current={tab === n.name && !sessionId ? "page" : undefined}
               onClick={() => {
-                setTab(n.name);
+                navigate(n.name);
                 setSessionId(null);
               }}
             >
@@ -349,7 +393,7 @@ export default function App() {
           <button
             className={tab === "Ajustes" ? "active" : ""}
             onClick={() => {
-              setTab("Ajustes");
+              navigate("Ajustes");
               setSessionId(null);
             }}
           >
@@ -390,7 +434,7 @@ export default function App() {
             className="icon mobile-settings"
             aria-label="Ajustes"
             onClick={() => {
-              setTab("Ajustes");
+              navigate("Ajustes");
               setSessionId(null);
             }}
           >
@@ -424,7 +468,7 @@ export default function App() {
               sessionId={sessionId}
               onClose={() => {
                 setSessionId(null);
-                setTab("Hoje");
+                navigate("Hoje");
               }}
             />
           ) : tab === "Hoje" ? (
@@ -432,22 +476,22 @@ export default function App() {
               model={model}
               onStart={start}
               onResume={setSessionId}
-              onPlan={() => setTab("Meu treino")}
-              onAgenda={() => setTab("Agenda")}
+              onPlan={() => navigate("Meu treino")}
+              onAgenda={() => navigate("Agenda")}
             />
           ) : tab === "Agenda" ? (
             <Calendar model={model} onStart={start} onOpen={setSessionId} />
           ) : tab === "Evolução" ? (
             <Progress model={model} />
           ) : tab === "Meu treino" ? (
-            <PlanEditor model={model} />
+            <PlanEditor model={model} onDirtyChange={setPlanDirty} />
           ) : tab === "Instalar" ? (
             <Install />
           ) : (
             <Settings
               model={model}
               onLogout={() => void logout()}
-              onInstall={() => setTab("Instalar")}
+              onInstall={() => navigate("Instalar")}
             />
           )}
         </main>
@@ -456,12 +500,9 @@ export default function App() {
         </footer>
       </div>
       <MobileNavigation
-        items={nav.map((n) => ({ name: n.name, icon: <n.icon size={22} /> }))}
+        items={MOBILE_ITEMS}
         value={sessionId ? null : tab}
-        onChange={(name) => {
-          setTab(name);
-          setSessionId(null);
-        }}
+        onChange={navigate}
       />
       {error && (
         <Sheet title="Não foi possível continuar" onClose={() => setError("")}>
@@ -481,7 +522,7 @@ export default function App() {
             className="primary"
             onClick={() => {
               setWelcome(false);
-              setTab("Ajustes");
+              navigate("Ajustes");
             }}
           >
             Configurar meu diário <ArrowRight size={18} />

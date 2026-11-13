@@ -33,7 +33,41 @@ export default function Workout({
   sessionId: string;
   onClose: () => void;
 }) {
-  const session: Session = model.docs.find((d) => d.id === sessionId)!.payload;
+  const document = model.docs.find(
+    (d) => d.id === sessionId && d.kind === "session" && !d.deleted,
+  );
+  if (!document || document.payload.archivedAt)
+    return (
+      <div className="empty">
+        <h1>Este treino foi removido.</h1>
+        <p>Volte para hoje para escolher outro treino.</p>
+        <button className="secondary" onClick={onClose}>
+          Voltar para hoje
+        </button>
+      </div>
+    );
+  return (
+    <WorkoutSession
+      key={sessionId}
+      model={model}
+      session={document.payload}
+      sessionId={sessionId}
+      onClose={onClose}
+    />
+  );
+}
+function WorkoutSession({
+  model,
+  session,
+  sessionId,
+  onClose,
+}: {
+  model: Model;
+  session: Session;
+  sessionId: string;
+  onClose: () => void;
+}) {
+  const history = Boolean(session.finishedAt);
   const [index, setIndex] = useState(() =>
       firstPendingExerciseIndex(session, model.docs),
     ),
@@ -48,9 +82,10 @@ export default function Workout({
   );
   const reduced = useReducedMotion();
   useEffect(() => {
+    if (history) return;
     const t = setInterval(() => setTick(Date.now()), 1000);
     return () => clearInterval(t);
-  }, []);
+  }, [history]);
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [index]);
@@ -62,7 +97,7 @@ export default function Workout({
     (d) => d.payload.exerciseId === exercise?.id,
   ).length;
   const total = session.workout.exercises.reduce((n, e) => n + e.sets, 0);
-  const remaining = timerRemaining(deadline, tick);
+  const remaining = history ? 0 : timerRemaining(deadline, tick);
   const [restFinished, setRestFinished] = useState(false);
   const notified = useRef(0);
   useEffect(() => {
@@ -70,14 +105,14 @@ export default function Workout({
       deadline > 0 &&
       tick >= deadline &&
       notified.current !== deadline &&
-      !session.finishedAt &&
+      !history &&
       tick - deadline < 300000
     ) {
       notified.current = deadline;
       setRestFinished(true);
       if (!model.demo) void foregroundRest(sessionId, deadline).catch(() => {});
     }
-  }, [tick, deadline]);
+  }, [tick, deadline, history]);
   const elapsed = Math.max(
     0,
     Math.floor(
@@ -87,6 +122,7 @@ export default function Workout({
     ),
   );
   const timer = (s: number) => {
+    if (history) return;
     const d = s > 0 ? Date.now() + s * 1000 : 0;
     localStorage.setItem(key, String(d));
     setDeadline(d);
@@ -109,6 +145,7 @@ export default function Workout({
   };
   const next = () => {
     if (
+      !history &&
       count < exercise.sets &&
       !session.skipped[exercise.id] &&
       !confirm(
@@ -117,7 +154,11 @@ export default function Workout({
     )
       return;
     if (index < session.workout.exercises.length - 1) setIndex(index + 1);
-    else setFinish(true);
+    else if (history) onClose();
+    else {
+      setError("");
+      setFinish(true);
+    }
   };
   if (!exercise)
     return (
@@ -149,6 +190,12 @@ export default function Workout({
           {elapsed} min
         </span>
       </header>
+      {history && (
+        <p className="fine" role="status">
+          Treino concluído · você pode corrigir as séries registradas. O horário
+          de conclusão será preservado.
+        </p>
+      )}
       <motion.div
         key={exercise.id}
         initial={reduced ? false : { y: 6 }}
@@ -181,16 +228,17 @@ export default function Workout({
           exercise={exercise}
           session={session}
           model={model}
+          history={history}
           attempt={attempt}
           onSave={() => timer(exercise.rest)}
         />
       </motion.div>
-      {error && (
+      {error && !skip && !finish && (
         <p role="alert" className="error">
           {error}
         </p>
       )}
-      {restFinished && (
+      {restFinished && !history && (
         <div className="rest-finished" role="status">
           <Check size={18} />
           <span>Descanso concluído. Próxima série quando estiver pronto.</span>
@@ -239,7 +287,9 @@ export default function Workout({
           onClick={next}
         >
           {index === session.workout.exercises.length - 1
-            ? "Revisar treino"
+            ? history
+              ? "Fechar histórico"
+              : "Revisar treino"
             : "Próximo exercício"}
           <ChevronRight size={17} />
         </button>
@@ -260,32 +310,39 @@ export default function Workout({
           séries, no RIR alvo, em duas exposições comparáveis, considere o menor
           aumento de carga disponível.
         </p>
-        <button
-          className="text-button skip-action"
-          onClick={() => setSkip(true)}
-        >
-          <SkipForward size={16} />
-          Pular este exercício
-        </button>
+        {!history && (
+          <button
+            className="text-button skip-action"
+            onClick={() => {
+              setError("");
+              setSkip(true);
+            }}
+          >
+            <SkipForward size={16} />
+            Pular este exercício
+          </button>
+        )}
       </details>
       {session.skipped[exercise.id] && (
         <p className="fine">
           Pulado: {session.skipped[exercise.id]}{" "}
-          <button
-            className="text-button"
-            onClick={() =>
-              attempt(async () => {
-                const skipped = { ...session.skipped };
-                delete skipped[exercise.id];
-                await model.save(session.id, "session", {
-                  ...session,
-                  skipped,
-                });
-              })
-            }
-          >
-            Desfazer
-          </button>
+          {!history && (
+            <button
+              className="text-button"
+              onClick={() =>
+                attempt(async () => {
+                  const skipped = { ...session.skipped };
+                  delete skipped[exercise.id];
+                  await model.save(session.id, "session", {
+                    ...session,
+                    skipped,
+                  });
+                })
+              }
+            >
+              Desfazer
+            </button>
+          )}
         </p>
       )}
       {elapsed >= 40 && !session.finishedAt && (
@@ -294,12 +351,17 @@ export default function Workout({
           e retire acessórios se necessário para encerrar em 45 min.
         </p>
       )}
-      {skip && (
+      {skip && !history && (
         <Sheet title="Pular exercício" onClose={() => setSkip(false)}>
           <label>
             Motivo
             <input value={reason} onChange={(e) => setReason(e.target.value)} />
           </label>
+          {error && (
+            <p className="error" role="alert">
+              {error}
+            </p>
+          )}
           <button
             className="primary"
             onClick={() =>
@@ -319,7 +381,7 @@ export default function Workout({
           </button>
         </Sheet>
       )}
-      {finish && (
+      {finish && !history && (
         <Sheet title="Revisar e finalizar" onClose={() => setFinish(false)}>
           <p>
             {sets.length} de {total} séries registradas ·{" "}
@@ -329,6 +391,11 @@ export default function Workout({
             Séries em branco ficam como não realizadas. Registros pendentes
             serão enviados quando houver conexão.
           </p>
+          {error && (
+            <p className="error" role="alert">
+              {error}
+            </p>
+          )}
           <button
             className="primary"
             onClick={() =>
@@ -353,12 +420,14 @@ function ExerciseEntry({
   exercise: e,
   session,
   model,
+  history,
   attempt,
   onSave,
 }: {
   exercise: Exercise;
   session: Session;
   model: Model;
+  history: boolean;
   attempt: (a: () => Promise<void>) => Promise<void>;
   onSave: () => void;
 }) {
@@ -445,43 +514,51 @@ function ExerciseEntry({
             Série {active + 1} de {e.sets}
           </h2>
         </div>
-        <SeriesForm
-          key={active}
-          index={active}
-          exercise={e}
-          initial={recorded.find((d) => d.payload.index === active)}
-          suggested={working || String(reference?.load ?? "")}
-          onSubmit={(load, reps, rir) =>
-            attempt(async () => {
-              const values = validateSet(load, reps, rir);
-              if (
-                e.unit === "bar" &&
-                model.profile.barWeight !== null &&
-                values.load < model.profile.barWeight
-              )
-                throw Error("A carga total deve incluir a barra.");
-              const old = recorded.find((d) => d.payload.index === active);
-              await model.save(
-                old?.id ?? (await setIdentity(session.id, e.id, active)),
-                "set",
-                {
-                  sessionId: session.id,
-                  exerciseId: e.id,
-                  index: active,
-                  ...values,
-                  machine: e.machine,
-                },
-              );
-              setWorking(String(values.load));
-              onSave();
-              const next = Array.from({ length: e.sets }, (_, i) => i).find(
-                (i) =>
-                  i !== active && !recorded.some((d) => d.payload.index === i),
-              );
-              if (next !== undefined) setActive(next);
-            })
-          }
-        />
+        {history && !recorded.some((d) => d.payload.index === active) ? (
+          <p className="fine">
+            Esta série não foi realizada. Em Ver séries, selecione um registro
+            para corrigir.
+          </p>
+        ) : (
+          <SeriesForm
+            key={active}
+            index={active}
+            exercise={e}
+            initial={recorded.find((d) => d.payload.index === active)}
+            suggested={working || String(reference?.load ?? "")}
+            onSubmit={(load, reps, rir) =>
+              attempt(async () => {
+                const values = validateSet(load, reps, rir);
+                if (
+                  e.unit === "bar" &&
+                  model.profile.barWeight !== null &&
+                  values.load < model.profile.barWeight
+                )
+                  throw Error("A carga total deve incluir a barra.");
+                const old = recorded.find((d) => d.payload.index === active);
+                await model.save(
+                  old?.id ?? (await setIdentity(session.id, e.id, active)),
+                  "set",
+                  {
+                    sessionId: session.id,
+                    exerciseId: e.id,
+                    index: active,
+                    ...values,
+                    machine: e.machine,
+                  },
+                );
+                setWorking(String(values.load));
+                if (!history) onSave();
+                const next = Array.from({ length: e.sets }, (_, i) => i).find(
+                  (i) =>
+                    i !== active &&
+                    !recorded.some((d) => d.payload.index === i),
+                );
+                if (next !== undefined) setActive(next);
+              })
+            }
+          />
+        )}
         {reference && (
           <p className="reference-note">
             Última referência: {reference.load} kg × {reference.reps} reps

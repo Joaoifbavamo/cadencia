@@ -1,3 +1,4 @@
+import { usePausedRemoval } from "../PausedRemoval.tsx";
 import { Button as GlassButton } from "glisse";
 import { useState } from "react";
 import { ArrowRight, Play, Check, Plus, ChevronDown } from "lucide-react";
@@ -25,6 +26,7 @@ export default function Today({
   onPlan: () => void;
   onAgenda: () => void;
 }) {
+  const removal = usePausedRemoval(model);
   const date = todayKey(new Date(), model.profile.timezone);
   const plan = visible(model.docs, "plan")[0]?.payload as Plan | undefined;
   const scheduled = plannedWorkout(plan, date);
@@ -137,6 +139,12 @@ export default function Today({
           >
             Continuar treino <ArrowRight size={19} />
           </button>
+          <button
+            className="text-button retire-workout"
+            onClick={() => removal.requestRemove(draft)}
+          >
+            Retirar treino pausado
+          </button>
         </section>
       ) : selected ? (
         <section className="today-workout">
@@ -188,20 +196,31 @@ export default function Today({
           {drafts
             .filter((s) => s.id !== draft?.id)
             .map((s) => (
-              <button
-                key={s.id}
-                className="workout-choice"
-                onClick={() => onResume(s.id)}
-              >
-                <div>
-                  <b>{s.payload.workout.name}</b>
-                  <span>
-                    {formatDate(s.payload.actualDate)} · retomar sem perder
-                    registros
-                  </span>
-                </div>
-                <ArrowRight size={18} />
-              </button>
+              <div className="paused-row" key={s.id}>
+                {" "}
+                <button
+                  className="workout-choice"
+                  onClick={() => onResume(s.id)}
+                >
+                  <div>
+                    <b>{s.payload.workout.name}</b>
+                    <span>
+                      {formatDate(s.payload.actualDate)} · retomar sem perder
+                      registros
+                    </span>
+                  </div>
+                  <ArrowRight size={18} />
+                </button>
+                <button
+                  className="text-button retire-workout"
+                  aria-label={
+                    "Retirar treino pausado: " + s.payload.workout.name
+                  }
+                  onClick={() => removal.requestRemove(s)}
+                >
+                  Retirar
+                </button>
+              </div>
             ))}
         </details>
       )}
@@ -307,6 +326,7 @@ export default function Today({
           Ver minha ficha <ArrowRight size={16} />
         </button>
       )}
+      {removal.controls}
       {choose && (
         <Sheet title="Qual treino vai fazer?" onClose={() => setChoose(false)}>
           <p>

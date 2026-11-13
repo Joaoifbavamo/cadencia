@@ -1,3 +1,4 @@
+import { usePausedRemoval } from "../PausedRemoval.tsx";
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, ArrowUpRight } from "lucide-react";
 import type { Model } from "../model.ts";
@@ -20,6 +21,7 @@ export default function Calendar({
   onStart: (w: Workout, actual: string, planned: string) => void;
   onOpen: (id: string) => void;
 }) {
+  const removal = usePausedRemoval(model);
   const [date, setDate] = useState(todayKey());
   const [month, setMonth] = useState(date.slice(0, 7));
   const [activity, setActivity] = useState(false);
@@ -128,6 +130,21 @@ export default function Calendar({
               <button
                 key={d}
                 className={d === date ? "selected" : ""}
+                aria-pressed={d === date}
+                aria-label={
+                  new Date(d + "T12:00:00Z").toLocaleDateString("pt-BR", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                    timeZone: "UTC",
+                  }) +
+                  (d === todayKey() ? ", hoje" : "") +
+                  (done
+                    ? ", registrado"
+                    : plannedWorkout(plan, d)
+                      ? ", treino previsto"
+                      : ", dia livre")
+                }
                 onClick={() => {
                   selectDate(d);
                 }}
@@ -205,6 +222,17 @@ export default function Calendar({
                   />
                 </label>
               </div>
+              {!s.payload.finishedAt && (
+                <button
+                  className="text-button"
+                  aria-label={
+                    "Retirar treino pausado: " + s.payload.workout.name
+                  }
+                  onClick={() => removal.requestRemove(s)}
+                >
+                  Retirar
+                </button>
+              )}
               <button
                 className="icon"
                 aria-label="Abrir registro"
@@ -280,6 +308,7 @@ export default function Calendar({
           </p>
         )}
       </section>
+      {removal.controls}
       {activity && (
         <Sheet
           title={editing ? "Editar atividade" : "Nova atividade"}
