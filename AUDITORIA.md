@@ -46,3 +46,15 @@ Verificação atual: 63 testes Node passaram. Suítes de navegador cobrem etapas
 O Supabase continua apontando dois avisos preexistentes: [pg_net registrado no schema public](https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public) e [proteção opcional de senhas vazadas desativada](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection). Não foi feita alteração arriscada na extensão ativa nem habilitado recurso possivelmente condicionado ao plano.
 
 Esta revisão não equivale a um teste de invasão ou garantia de ausência de erros. Não foram testados um iPhone físico, VoiceOver, entrega física de push, encerramento forçado pelo iOS ou anos de dados reais. O cancelamento remoto de um descanso ao retirar é uma tentativa no aparelho atual; um aviso já enviado ou sem conexão pode não ser recolhido. Os testes de interface usaram dados fictícios, sem apagar ou modificar seu histórico pessoal.
+
+## Revisão integral — 13/11/2026
+
+Escopo: Hoje, Agenda, Evolução, Meu treino, Instalar, Ajustes, login/recuperação, aquecimento, série, descanso, lista, registros, resumo, diálogos, mensagens e notificações. Mantidos preto/branco, Manrope, C aprovado, setas e óptica/gestos do Glisse.
+
+A consolidação removeu 116 regras obsoletas de 25 classes de versões anteriores e 24 declarações duplicadas. Estilos globais passam por módulos com precedência explícita. Os três componentes de etapa do treino foram separados do controlador da sessão. Carga/reps continuam lado a lado, com 52px mínimos e teclado numérico; altura acompanha ampliação do texto.
+
+Melhorias: títulos longos de treino não competem com Trocar treino; campos e ações consistentes; tipografia móvel mais legível; Agenda prioriza leitura com datas editáveis recolhidas; Evolução mostra 20 séries por página, mantendo todo o histórico; erros do editor ficam próximos do comando de salvar. Diálogos preservam foco de teclado e bloqueiam a rolagem externa enquanto abertos.
+
+Falhas reproduzidas e corrigidas: seletor nativo WebKit aumentava a largura da Agenda em 320px; texto ampliado estourava a faixa de demonstração e a grade do calendário; abas ficavam com largura anterior durante mudança de viewport; voltar rapidamente ao editor após aceitar descarte mantinha a edição local. As correções têm verificações de regressão.
+
+Glisse: resposta da seleção separada da montagem pesada da nova tela. A montagem aguarda flags reais de término da mola; navegação cancelada nunca monta uma rota antiga. A largura usa o contêiner e suas áreas seguras, sem medições posteriores por ResizeObserver. Não foram reduzidos raio/refração para mascarar o custo. Medições de laboratório e limitações ficam em FRONTEND_REVISAO.md.

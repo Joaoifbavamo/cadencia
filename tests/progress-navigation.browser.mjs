@@ -1,9 +1,15 @@
-import { chromium, expect } from "@playwright/test";
-const browser = await chromium.launch({
+import { chromium, webkit, expect } from "@playwright/test";
+const browser = await (
+  process.env.BROWSER_ENGINE === "webkit" ? webkit : chromium
+).launch({
   headless: true,
-  executablePath:
-    process.env.REVIEW_BROWSER_PATH ||
-    "C:/Program Files/Google/Chrome/Application/chrome.exe",
+  ...(process.env.BROWSER_ENGINE === "webkit"
+    ? {}
+    : {
+        executablePath:
+          process.env.REVIEW_BROWSER_PATH ||
+          "C:/Program Files/Google/Chrome/Application/chrome.exe",
+      }),
 });
 const base = process.env.REVIEW_BASE_URL || "http://127.0.0.1:5174";
 try {
@@ -44,6 +50,7 @@ try {
     expect(bounds.scroll).toBe(width);
     expect(bounds.first).toBeGreaterThanOrEqual(bounds.left);
     expect(bounds.last).toBeLessThanOrEqual(bounds.right + 0.1);
+    expect(bounds.last).toBeGreaterThanOrEqual(bounds.right - 4.2);
     await page.locator(".lg-tab").nth(3).click();
     await expect(page.locator("#current")).toHaveText("Evolução");
     console.log("PASS glass bounds + click", width, bounds);
@@ -78,7 +85,7 @@ try {
   await page.keyboard.press("Enter");
   await expect(page.locator("#current")).toHaveText("Ficha");
   await page.screenshot({
-    path: "../../work/guided/progress-navigation-mobile.png",
+    path: "test-results/guided/progress-navigation-mobile.png",
     fullPage: true,
   });
   const measure = async () =>

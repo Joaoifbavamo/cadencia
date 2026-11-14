@@ -23,6 +23,8 @@ export function Empty({
     </div>
   );
 }
+let openSheets = 0;
+let previousOverflow = "";
 export function Sheet({
   title,
   onClose,
@@ -34,8 +36,21 @@ export function Sheet({
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
-    ref.current?.showModal();
-    return () => ref.current?.close();
+    const dialog = ref.current;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    if (!dialog) return;
+    if (openSheets++ === 0) {
+      previousOverflow = document.documentElement.style.overflow;
+      document.documentElement.style.overflow = "hidden";
+    }
+    dialog.showModal();
+    return () => {
+      dialog.close();
+      if (--openSheets === 0)
+        document.documentElement.style.overflow = previousOverflow;
+      if (previousFocus?.isConnected)
+        previousFocus.focus({ preventScroll: true });
+    };
   }, []);
   return (
     <dialog

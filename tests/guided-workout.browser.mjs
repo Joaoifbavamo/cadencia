@@ -11,7 +11,7 @@ const errors = [];
 const context = await b.newContext({ viewport: { width: 390, height: 844 } });
 const p = await context.newPage();
 p.on("pageerror", (e) => errors.push(e.message));
-const shots = "../../work/guided";
+const shots = "test-results/guided";
 fs.mkdirSync(shots, { recursive: true });
 async function overflow(label) {
   for (const width of [320, 375, 390, 430, 676, 1280]) {

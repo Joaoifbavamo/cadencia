@@ -174,53 +174,70 @@ export default function Calendar({
         {sessions
           .filter((s) => s.payload.actualDate === date)
           .map((s) => (
-            <div className="agenda-row" key={s.id}>
+            <div className="agenda-row agenda-session" key={s.id}>
               <div>
                 <b>{s.payload.workout.name}</b>
                 <p>
                   {s.payload.finishedAt ? "Concluído" : "Rascunho"} · previsto:{" "}
                   {formatDate(s.payload.plannedDate)}
                 </p>
-                <label>
-                  Data realizada
-                  <input
-                    type="date"
-                    value={s.payload.actualDate}
-                    onChange={async (e) => {
-                      const next = e.currentTarget.value;
-                      if (!next) return;
-                      try {
-                        await model.save(s.id, "session", {
-                          ...s.payload,
-                          actualDate: next,
-                        });
-                        selectDate(next);
-                        setMonth(next.slice(0, 7));
-                      } catch (error) {
-                        setError((error as Error).message);
-                      }
-                    }}
-                  />
-                </label>
-                <label>
-                  Data originalmente prevista
-                  <input
-                    type="date"
-                    value={s.payload.plannedDate}
-                    onChange={async (e) => {
-                      const next = e.currentTarget.value;
-                      if (!next) return;
-                      try {
-                        await model.save(s.id, "session", {
-                          ...s.payload,
-                          plannedDate: next,
-                        });
-                      } catch (error) {
-                        setError((error as Error).message);
-                      }
-                    }}
-                  />
-                </label>
+                <details className="agenda-dates">
+                  <summary>Alterar datas</summary>
+                  <div className="agenda-date-fields">
+                    <label>
+                      Data realizada
+                      <input
+                        type="date"
+                        value={s.payload.actualDate}
+                        onChange={async (e) => {
+                          const next = e.currentTarget.value;
+                          if (!next) return;
+                          try {
+                            await model.save(
+                              s.id,
+                              "session",
+                              {
+                                ...s.payload,
+                                actualDate: next,
+                              },
+                              false,
+                              JSON.stringify(s.payload),
+                            );
+                            selectDate(next);
+                            setMonth(next.slice(0, 7));
+                          } catch (error) {
+                            setError((error as Error).message);
+                          }
+                        }}
+                      />
+                    </label>
+                    <label>
+                      Data originalmente prevista
+                      <input
+                        type="date"
+                        value={s.payload.plannedDate}
+                        onChange={async (e) => {
+                          const next = e.currentTarget.value;
+                          if (!next) return;
+                          try {
+                            await model.save(
+                              s.id,
+                              "session",
+                              {
+                                ...s.payload,
+                                plannedDate: next,
+                              },
+                              false,
+                              JSON.stringify(s.payload),
+                            );
+                          } catch (error) {
+                            setError((error as Error).message);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                </details>
               </div>
               {!s.payload.finishedAt && (
                 <button
@@ -234,11 +251,11 @@ export default function Calendar({
                 </button>
               )}
               <button
-                className="icon"
+                className="text-button agenda-open"
                 aria-label="Abrir registro"
                 onClick={() => onOpen(s.id)}
               >
-                <ArrowUpRight />
+                Ver registro <ArrowUpRight size={18} />
               </button>
             </div>
           ))}
@@ -312,7 +329,7 @@ export default function Calendar({
       {activity && (
         <Sheet
           title={editing ? "Editar atividade" : "Nova atividade"}
-          onClose={() => setActivity(false)}
+          onClose={() => !savingActivity && setActivity(false)}
         >
           <form
             onSubmit={async (e) => {
@@ -321,12 +338,18 @@ export default function Calendar({
               const f = new FormData(e.currentTarget);
               setSavingActivity(true);
               try {
-                await model.save(editing?.id ?? uid(), "activity", {
-                  date,
-                  name: String(f.get("name")).trim(),
-                  minutes: Number(f.get("minutes")),
-                  notes: String(f.get("notes")),
-                });
+                await model.save(
+                  editing?.id ?? uid(),
+                  "activity",
+                  {
+                    date,
+                    name: String(f.get("name")).trim(),
+                    minutes: Number(f.get("minutes")),
+                    notes: String(f.get("notes")),
+                  },
+                  false,
+                  editing ? JSON.stringify(editing.payload) : null,
+                );
                 setActivity(false);
               } catch (e) {
                 setError((e as Error).message);

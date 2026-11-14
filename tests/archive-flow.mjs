@@ -1,4 +1,4 @@
-import { chromium } from "@playwright/test";
+import { chromium, expect } from "@playwright/test";
 import { fileURLToPath } from "node:url";
 const b = await chromium.launch({
   executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -104,8 +104,8 @@ try {
   p.once("dialog", (d) => d.accept());
   await nav("Hoje");
   await nav("Meu treino");
-  if ((await p.getByLabel("Nome da ficha").inputValue()) !== original)
-    throw Error("Descarte confirmado não aplicado");
+  await p.waitForFunction(() => !document.querySelector("main")?.inert);
+  await expect(p.getByLabel("Nome da ficha")).toHaveValue(original);
   await p.evaluate(async () => {
     const { supabase } = await import("/src/auth.ts");
     await supabase.auth.signOut();

@@ -53,6 +53,7 @@ export default function MotivationEditor({
       <form
         onSubmit={async (e) => {
           e.preventDefault();
+          if (busy) return;
           setError("");
           try {
             const clean = validateMotivation(name, slots);

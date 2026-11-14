@@ -7,11 +7,25 @@
     max-width: none;
     width: auto;
     box-sizing: border-box;
+    container-type: inline-size;
   }
   .cadencia-navigation.glisse-nav .lg-tab-bar {
     box-sizing: border-box;
-    --lg-tab-width: var(--cadencia-tab-width, 56px);
+    /* Fallback for browsers without container units. */
+    --lg-tab-width: calc(
+      (
+          100vw - max(12px, env(safe-area-inset-left)) -
+            max(12px, env(safe-area-inset-right)) - 8px
+        ) /
+        var(--cadencia-tab-count)
+    );
     width: 100%;
+  }
+  @supports (width: 1cqw) {
+    .cadencia-navigation.glisse-nav .lg-tab-bar {
+      /* Resolve in the same layout pass as the safe-area-bounded container. */
+      --lg-tab-width: calc((100cqw - 8px) / var(--cadencia-tab-count));
+    }
   }
   .cadencia-navigation .lg-tab-labels {
     min-width: 0;

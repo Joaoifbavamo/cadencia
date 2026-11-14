@@ -1,8 +1,15 @@
+import { afterGlassSettles } from "./navigation-motion.ts";
 import MobileNavigation from "./MobileNavigation.tsx";
 import { parseRoute, routeHash, type AppRoute } from "./router.ts";
 import { clearEditorDraft } from "./editor-draft.ts";
 import { singletonIdentity } from "./singleton.ts";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   CalendarDays,
   ChartNoAxesCombined,
@@ -69,6 +76,14 @@ export default function App() {
     () => parseRoute(location.hash)?.tab ?? "Hoje",
   );
   const [planDirty, setPlanDirty] = useState(false);
+  const [editorGeneration, setEditorGeneration] = useState(0);
+  const resetEditorPending = useRef(false);
+  const resetDiscardedEditor = () => {
+    if (resetEditorPending.current) {
+      resetEditorPending.current = false;
+      setEditorGeneration((n) => n + 1);
+    }
+  };
   const [sessionId, setSessionId] = useState<string | null>(
     () => parseRoute(location.hash)?.sessionId ?? null,
   );
@@ -83,6 +98,8 @@ export default function App() {
   const engine = useRef<SyncEngine | null>(null);
   const navigationRef = useRef({ tab, sessionId, planDirty, account });
   navigationRef.current = { tab, sessionId, planDirty, account };
+  const cancelScreenCommit = useRef<() => void>(() => {});
+  useEffect(() => () => cancelScreenCommit.current(), []);
   const focusNavigation = useRef(false);
   const arrowNavigation = useRef(false);
   const historyPosition = useRef<number>(
@@ -209,6 +226,8 @@ export default function App() {
       arrowNavigation.current = false;
     };
     const restore = () => {
+      cancelScreenCommit.current();
+      resetDiscardedEditor();
       if (location.hash.includes("type=recovery")) return;
       const route = parseRoute(location.hash) ?? {
         tab: "Hoje",
@@ -245,8 +264,11 @@ export default function App() {
         }
         return;
       }
-      if (current.planDirty && current.account)
+      if (current.planDirty && current.account) {
         clearEditorDraft(current.account);
+        resetEditorPending.current = true;
+      }
+      resetDiscardedEditor();
       setPlanDirty(false);
       historyPosition.current =
         history.state?.cadenciaRouteIndex ?? historyPosition.current + 1;
@@ -280,7 +302,8 @@ export default function App() {
       heading.focus({ preventScroll: true });
     }
   }, [tab, sessionId, ready]);
-  const openRoute = useCallback((route: AppRoute) => {
+  const openRoute = useCallback((route: AppRoute, glass = false) => {
+    cancelScreenCommit.current();
     if (routeHash(route) !== location.hash) {
       historyPosition.current += 1;
       history.pushState(
@@ -290,13 +313,20 @@ export default function App() {
       );
     }
     focusNavigation.current = !arrowNavigation.current;
-    setTab(route.tab);
-    setSessionId(route.sessionId);
+    const commit = () =>
+      startTransition(() => {
+        resetDiscardedEditor();
+        setTab(route.tab);
+        setSessionId(route.sessionId);
+      });
+    if (glass) cancelScreenCommit.current = afterGlassSettles(commit);
+    else commit();
   }, []);
   const openSession = (id: string) => openRoute({ tab: "Hoje", sessionId: id });
   const navigate = useCallback(
-    (next: string) => {
-      if (next === tab && !sessionId) return;
+    (next: string, glass = false) => {
+      const currentRoute = parseRoute(location.hash);
+      if (next === currentRoute?.tab && !currentRoute.sessionId) return true;
       if (
         tab === "Meu treino" &&
         planDirty &&
@@ -304,12 +334,20 @@ export default function App() {
           "Sua ficha tem alterações não salvas. Sair e descartar essas alterações?",
         )
       )
-        return;
-      if (planDirty && account) clearEditorDraft(account);
+        return false;
+      if (planDirty && account) {
+        clearEditorDraft(account);
+        resetEditorPending.current = true;
+      }
       setPlanDirty(false);
-      openRoute({ tab: next, sessionId: null });
+      openRoute({ tab: next, sessionId: null }, glass);
+      return true;
     },
     [tab, planDirty, sessionId, account, openRoute],
+  );
+  const navigateMobile = useCallback(
+    (next: string) => navigate(next, true),
+    [navigate],
   );
   async function importDocuments(input: unknown) {
     if (!store.current) throw Error("Armazenamento indisponível.");
@@ -395,6 +433,7 @@ export default function App() {
     }
   }
   async function logout() {
+    cancelScreenCommit.current();
     const pending = store.current?.docs.some((d) => d.dirty);
     if (
       pending &&
@@ -633,7 +672,7 @@ export default function App() {
             <Progress model={model} />
           ) : tab === "Meu treino" ? (
             <PlanEditor
-              key={account}
+              key={account + "-" + editorGeneration}
               accountKey={account}
               model={model}
               onDirtyChange={setPlanDirty}
@@ -655,7 +694,7 @@ export default function App() {
       <MobileNavigation
         items={MOBILE_ITEMS}
         value={sessionId ? null : tab}
-        onChange={navigate}
+        onChange={navigateMobile}
       />
       {error && (
         <Sheet title="Não foi possível continuar" onClose={() => setError("")}>
@@ -802,6 +841,7 @@ function Login({ onDemo }: { onDemo: () => void }) {
         <form
           onSubmit={async (e) => {
             e.preventDefault();
+            if (busy) return;
             setBusy(true);
             setError("");
             const f = new FormData(e.currentTarget);

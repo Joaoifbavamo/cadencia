@@ -1,4 +1,9 @@
 :root {
+  --control-height: 48px;
+  --control-radius: 12px;
+  --text-label: 0.875rem;
+  --page-gap: 28px;
+  --section-gap: 24px;
   --bg: #ffffff;
   --surface: #ffffff;
   --surface-alt: #f4f4f4;

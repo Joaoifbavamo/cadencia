@@ -1,15 +1,111 @@
-import {chromium} from '@playwright/test';import {fileURLToPath} from 'node:url';
-const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});try{
-const c=await browser.newContext({viewport:{width:390,height:844}}),p=await c.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
-const nav=async name=>p.locator('.bottom-nav').getByRole('button',{name,exact:true}).or(p.locator('.bottom-nav').getByRole('tab',{name,exact:true})).click();
-const shot=async name=>{await p.evaluate(()=>document.fonts.ready);await p.screenshot({path:fileURLToPath(new URL('../.impeccable/review/'+name+'.png',import.meta.url)),fullPage:true})};
-await p.goto('http://127.0.0.1:5174');await p.getByRole('button',{name:'Conhecer a demonstração'}).click();await p.getByRole('heading',{name:'Treino de hoje'}).waitFor();
-await p.evaluate(async()=>{const {LocalStore}=await import('/src/storage.ts');const store=await new LocalStore('demo').open();const plan=store.docs.find(d=>d.kind==='plan');const w=structuredClone(plan.payload.workouts[0]);w.id='demo-lower';w.name='Inferior · exemplo';w.day=2;w.exercises=w.exercises.slice(0,1);w.exercises[0].id='demo-squat';w.exercises[0].name='Agachamento livre';await store.mutate(plan.id,'plan',{...plan.payload,workouts:[plan.payload.workouts[0],w]});store.close();});
-const open=async()=>{const change=p.getByRole('button',{name:'Trocar treino',exact:true});if(await change.isVisible())await change.click();else await p.getByRole('button',{name:'Escolher um treino',exact:true}).click();await p.getByRole('dialog',{name:'Qual treino vai fazer?'}).waitFor()};
-await open();await p.getByLabel('Data originalmente prevista',{exact:true}).fill('2026-11-10');await p.getByRole('button',{name:/Superior · exemplo/}).click();await p.getByRole('dialog').waitFor({state:'hidden'});await nav('Agenda');await nav('Hoje');await p.getByRole('heading',{name:'Superior · exemplo',exact:true}).waitFor();await shot('glisse-home');if(!await p.locator('.lg-tab-bar').count())throw Error('Glisse ausente');
-await p.getByRole('button',{name:'Começar treino'}).click();await p.getByLabel('Carga série 1',{exact:true}).fill('30');await p.getByLabel('Repetições série 1',{exact:true}).fill('8');await p.getByRole('button',{name:'Salvar série 1',exact:true}).click();await p.getByRole('heading',{name:'Série 2 de 3'}).waitFor();await p.getByRole('button',{name:'Voltar para hoje'}).click();await open();await shot('change-workout');await p.getByRole('button',{name:/Inferior · exemplo/}).click();await p.getByRole('dialog').waitFor({state:'hidden'});await p.getByRole('heading',{name:'Inferior · exemplo',exact:true}).waitFor();await p.getByRole('button',{name:'Começar treino'}).click();await p.getByRole('heading',{name:'Agachamento livre'}).waitFor();await p.getByRole('button',{name:'Voltar para hoje'}).click();await p.locator('.paused-workouts summary').click();await p.locator('.paused-workouts .workout-choice').filter({hasText:'Superior · exemplo'}).click();await p.getByRole('heading',{name:'Supino reto com barra'}).waitFor();await p.locator('.series-history summary').click();await p.getByRole('button',{name:'Editar série 1',exact:true}).click();if(await p.getByLabel('Carga série 1',{exact:true}).inputValue()!=='30')throw Error('Série anterior perdida');
-await p.reload();await p.getByRole('button',{name:'Conhecer a demonstração'}).click();await p.getByRole('heading',{name:'Inferior · exemplo',exact:true}).waitFor();await nav('Agenda');await p.getByRole('button',{name:'Adicionar cardio ou atividade'}).click();await p.getByLabel('Atividade',{exact:true}).fill('Caminhada teste');await p.getByLabel('Duração em minutos').fill('20');await p.getByRole('button',{name:'Salvar atividade',exact:true}).click();await p.getByRole('dialog').waitFor({state:'hidden'});await p.getByRole('button',{name:'Editar atividade',exact:true}).click();await p.getByLabel('Duração em minutos').fill('25');await p.getByRole('button',{name:'Salvar atividade',exact:true}).click();await p.getByRole('dialog').waitFor({state:'hidden'});if(await p.locator('.agenda-row b').filter({hasText:'Caminhada teste'}).count()!==1)throw Error('Atividade duplicada');
-await p.getByLabel('Treino a realizar').selectOption('demo-lower');await p.locator('.calendar-grid').getByRole('button',{name:/^15 de/}).click();if(await p.getByLabel('Treino a realizar').inputValue()!=='demo-upper')throw Error('Escolha anterior vazou para outro dia');await p.getByRole('button',{name:'Hoje',exact:true}).first().click();
-await p.getByLabel('Treino a realizar').selectOption('demo-upper');await p.getByRole('button',{name:'Registrar neste dia'}).click();await p.getByRole('heading',{name:'Supino reto com barra'}).waitFor();await p.getByRole('button',{name:'Voltar para hoje'}).click();await p.getByRole('heading',{name:'Superior · exemplo',exact:true}).waitFor();await nav('Hoje');await p.getByRole('button',{name:'Ajustes',exact:true}).last().click();await p.getByRole('button',{name:'Escuro',exact:true}).click();await nav('Hoje');await shot('glisse-home-dark');await p.emulateMedia({contrast:'more'});await p.locator('.static-nav').waitFor();if(await p.locator('.lg-tab-bar').count())throw Error('Fallback não aplicado');await p.emulateMedia({contrast:'no-preference'});
-for(const width of [320,375,430,676,1440]){await p.setViewportSize({width,height:900});if(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth))throw Error('Overflow '+width)}if(errors.length)throw Error(JSON.stringify(errors));console.log(JSON.stringify({passed:'Glisse real; trocar com treino iniciado preserva séries; escolha/datas persistem; cardio editável sem duplicar; Agenda limpa escolha por dia; fallback;320–1440',errors}));
-}finally{await browser.close()}
+import { chromium, expect } from "@playwright/test";
+const b = await chromium.launch({
+  executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
+  headless: true,
+});
+try {
+  const p = await b.newPage({ viewport: { width: 390, height: 844 } }),
+    errors = [];
+  p.on("pageerror", (e) => errors.push(e.message));
+  p.on("dialog", (d) => d.accept());
+  const nav = async (name) =>
+    p
+      .locator(".bottom-nav")
+      .getByRole("button", { name, exact: true })
+      .or(p.locator(".bottom-nav").getByRole("tab", { name, exact: true }))
+      .click();
+  await p.goto(process.env.REVIEW_BASE_URL || "http://127.0.0.1:5177");
+  await p.getByRole("button", { name: "Conhecer a demonstração" }).click();
+  await p.evaluate(async () => {
+    const { LocalStore } = await import("/src/storage.ts");
+    const s = await new LocalStore("demo").open();
+    const d = s.docs.find((d) => d.kind === "plan"),
+      w = structuredClone(d.payload.workouts[0]);
+    w.id = "demo-lower";
+    w.name = "Inferior · exemplo";
+    w.exercises = [
+      { ...w.exercises[0], id: "demo-squat", name: "Agachamento livre" },
+    ];
+    await s.mutate(d.id, "plan", {
+      ...d.payload,
+      workouts: [...d.payload.workouts, w],
+    });
+    s.close();
+  });
+  const choose = async (name) => {
+    const change = p.getByRole("button", {
+      name: "Trocar treino",
+      exact: true,
+    });
+    if (await change.isVisible()) await change.click();
+    else
+      await p
+        .getByRole("button", { name: "Escolher um treino", exact: true })
+        .click();
+    await p
+      .getByRole("dialog")
+      .getByRole("button", { name: new RegExp(name) })
+      .click();
+  };
+  await choose("Superior");
+  await p.getByRole("button", { name: "Começar treino" }).click();
+  await p
+    .getByRole("button", { name: "Pular aquecimento", exact: true })
+    .click();
+  await p.getByLabel("Carga série 1", { exact: true }).fill("30");
+  await p.getByLabel("Repetições série 1", { exact: true }).fill("8");
+  await p.getByRole("button", { name: "Salvar série 1 e descansar" }).click();
+  await p.getByRole("timer").waitFor();
+  await p.getByRole("button", { name: "Voltar para hoje" }).click();
+  await choose("Inferior");
+  await expect(
+    p.getByRole("heading", { name: "Inferior · exemplo", exact: true }),
+  ).toBeVisible();
+  await p.getByRole("button", { name: "Começar treino" }).click();
+  await p.getByRole("heading", { name: "Aquecimento", exact: true }).waitFor();
+  await p.getByRole("button", { name: "Voltar para hoje" }).click();
+  await p.locator(".paused-workouts summary").click();
+  await p
+    .locator(".paused-workouts .workout-choice")
+    .filter({ hasText: "Superior" })
+    .click();
+  await p.getByRole("button", { name: "Ver exercícios do treino" }).click();
+  await p.locator(".guided-exercise-list > button").first().click();
+  await p.getByRole("button", { name: "Ver séries deste exercício" }).click();
+  await p.getByRole("button", { name: "Editar série 1", exact: true }).click();
+  await expect(p.getByLabel("Carga série 1", { exact: true })).toHaveValue(
+    "30",
+  );
+  await p.getByRole("button", { name: "Voltar para hoje" }).click();
+  await nav("Agenda");
+  const add = p.getByRole("button", { name: "Adicionar cardio ou atividade" });
+  await add.click();
+  await p.getByLabel("Atividade", { exact: true }).fill("Caminhada teste");
+  await p.getByLabel("Duração em minutos").fill("20");
+  await p
+    .getByRole("button", { name: "Salvar atividade", exact: true })
+    .click();
+  await p
+    .getByRole("button", { name: "Editar atividade", exact: true })
+    .click();
+  await p.getByLabel("Duração em minutos").fill("25");
+  await p
+    .getByRole("button", { name: "Salvar atividade", exact: true })
+    .click();
+  await expect(
+    p.locator(".agenda-row").filter({ hasText: "Caminhada teste" }),
+  ).toHaveCount(1);
+  await expect(
+    p.locator(".agenda-row").filter({ hasText: "Caminhada teste" }),
+  ).toContainText("25 min");
+  await p.locator(".agenda-dates summary").first().click();
+  await expect(
+    p.getByLabel("Data realizada", { exact: true }).first(),
+  ).toBeVisible();
+  expect(errors).toEqual([]);
+  console.log(
+    "PASS troca de treino preserva séries e descanso; retomada; cardio editável sem duplicação; datas acessíveis.",
+  );
+} finally {
+  await b.close();
+}

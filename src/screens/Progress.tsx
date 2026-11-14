@@ -6,6 +6,8 @@ import "../progress-history.css";
 import { Empty, formatDate } from "../components.tsx";
 export default function Progress({ model }: { model: Model }) {
   const [choice, setChoice] = useState("");
+  const [page, setPage] = useState(0);
+  const pageSize = 20;
   const [period, setPeriod] = useState("90");
   const history = useMemo(() => buildHistoryIndex(model.docs), [model.docs]);
   const rows = history.rows;
@@ -21,6 +23,15 @@ export default function Progress({ model }: { model: Model }) {
     )
     .sort((a, b) => a.date.localeCompare(b.date) || a.index - b.index);
   const points = dailyLoads(data);
+  const pageIndex = Math.min(
+    page,
+    Math.max(0, Math.ceil(data.length / pageSize) - 1),
+  );
+  const recent = [...data].reverse();
+  const pageRows = recent.slice(
+    pageIndex * pageSize,
+    (pageIndex + 1) * pageSize,
+  );
   const comparison = selected
     ? (history.byComparison.get(selected.key)?.slice(0, 2) ?? [])
     : [];
@@ -44,7 +55,10 @@ export default function Progress({ model }: { model: Model }) {
               Exercício e faixa
               <select
                 value={selected?.key}
-                onChange={(e) => setChoice(e.target.value)}
+                onChange={(e) => {
+                  setChoice(e.target.value);
+                  setPage(0);
+                }}
               >
                 {options.map((o) => (
                   <option key={o.key} value={o.key}>
@@ -58,7 +72,10 @@ export default function Progress({ model }: { model: Model }) {
               Período
               <select
                 value={period}
-                onChange={(e) => setPeriod(e.target.value)}
+                onChange={(e) => {
+                  setPeriod(e.target.value);
+                  setPage(0);
+                }}
               >
                 <option value="30">30 dias</option>
                 <option value="90">90 dias</option>
@@ -123,10 +140,10 @@ export default function Progress({ model }: { model: Model }) {
                 role="img"
                 aria-label={`Histórico de carga: ${points.map((p) => `${formatDate(p.date)}, ${p.load} kg`).join("; ")}`}
               >
-                <line x1="30" y1="175" x2="535" y2="175" stroke="#dbe0eb" />
+                <line x1="30" y1="175" x2="535" y2="175" stroke="var(--line)" />
                 <polyline
                   fill="none"
-                  stroke="#203fd6"
+                  stroke="var(--ink)"
                   strokeWidth="3"
                   strokeLinejoin="round"
                   points={points
@@ -142,14 +159,14 @@ export default function Progress({ model }: { model: Model }) {
                       cx={40 + (i * 480) / Math.max(1, points.length - 1)}
                       cy={y(p.load)}
                       r="5"
-                      fill="#203fd6"
+                      fill="var(--ink)"
                     />
                     <title>
                       {p.date}: {p.load} kg
                     </title>
                   </g>
                 ))}
-                <text x="30" y="202" fontSize="12" fill="#526078">
+                <text x="30" y="202" fontSize="12" fill="var(--muted)">
                   {formatDate(points[0].date)}
                 </text>
                 <text
@@ -157,7 +174,7 @@ export default function Progress({ model }: { model: Model }) {
                   y="202"
                   textAnchor="end"
                   fontSize="12"
-                  fill="#526078"
+                  fill="var(--muted)"
                 >
                   {formatDate(points.at(-1)!.date)}
                 </text>
@@ -183,7 +200,7 @@ export default function Progress({ model }: { model: Model }) {
                 </tr>
               </thead>
               <tbody>
-                {[...data].reverse().map((r) => (
+                {pageRows.map((r) => (
                   <tr key={r.id}>
                     <td>{formatDate(r.date)}</td>
                     <td>{r.index + 1}</td>
@@ -195,6 +212,36 @@ export default function Progress({ model }: { model: Model }) {
               </tbody>
             </table>
           </div>
+          {data.length > 0 && (
+            <nav
+              className="history-pagination"
+              aria-label="Páginas do histórico"
+            >
+              <p role="status">
+                {pageIndex * pageSize + 1}–
+                {Math.min((pageIndex + 1) * pageSize, data.length)} de{" "}
+                {data.length} séries
+              </p>
+              <div>
+                <button
+                  className="secondary"
+                  aria-label="Mais recentes"
+                  disabled={pageIndex === 0}
+                  onClick={() => setPage(pageIndex - 1)}
+                >
+                  Mais recentes
+                </button>
+                <button
+                  className="secondary"
+                  aria-label="Mais antigos"
+                  disabled={(pageIndex + 1) * pageSize >= data.length}
+                  onClick={() => setPage(pageIndex + 1)}
+                >
+                  Mais antigos
+                </button>
+              </div>
+            </nav>
+          )}
         </>
       )}
     </>

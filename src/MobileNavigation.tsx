@@ -1,13 +1,13 @@
 import {
   memo,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import { TabBar } from "glisse";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import "./mobile-navigation.css";
 const accessibilityQueries = [
   "(prefers-reduced-transparency: reduce)",
@@ -33,33 +33,34 @@ const mobileQueries = ["(max-width: 760px)"];
 type Props = {
   items: { name: string; icon: ReactNode }[];
   value: string | null;
-  onChange: (value: string) => void;
+  onChange: (value: string) => boolean | void;
 };
 function Navigation({ items, value, onChange }: Props) {
+  const [selected, setSelected] = useState(value);
+  useLayoutEffect(() => setSelected(value), [value]);
+  useEffect(() => {
+    const restore = () => setSelected(value);
+    window.addEventListener("popstate", restore);
+    window.addEventListener("hashchange", restore);
+    return () => {
+      window.removeEventListener("popstate", restore);
+      window.removeEventListener("hashchange", restore);
+    };
+  }, [value]);
+  const select = useCallback(
+    (next: string) => {
+      if (onChange(next) !== false) setSelected(next);
+    },
+    [onChange],
+  );
   const simple = useMediaQueries(accessibilityQueries);
-  const nav = useRef<HTMLElement>(null);
   const tabs = useMemo(
     () => items.map((n) => ({ value: n.name, label: n.name, icon: n.icon })),
     [items],
   );
-  useLayoutEffect(() => {
-    const element = nav.current;
-    if (!element) return;
-    // The glass includes two 4px insets. Measure its actual safe-area-bounded
-    // container instead of deriving tab widths from the entire screen.
-    const resize = () =>
-      element.style.setProperty(
-        "--cadencia-tab-width",
-        `${Math.max(0, (element.getBoundingClientRect().width - 8) / Math.max(1, items.length))}px`,
-      );
-    resize();
-    const observer = new ResizeObserver(resize);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [items.length]);
   return (
     <nav
-      ref={nav}
+      style={{ "--cadencia-tab-count": items.length } as CSSProperties}
       className={
         "bottom-nav cadencia-navigation " +
         (simple ? "static-nav" : "glisse-nav")
@@ -71,9 +72,9 @@ function Navigation({ items, value, onChange }: Props) {
           <button
             key={n.name}
             type="button"
-            className={value === n.name ? "active" : ""}
+            className={selected === n.name ? "active" : ""}
             aria-current={value === n.name ? "page" : undefined}
-            onClick={() => onChange(n.name)}
+            onClick={() => select(n.name)}
           >
             {n.icon}
             <span>{n.name}</span>
@@ -83,8 +84,8 @@ function Navigation({ items, value, onChange }: Props) {
         <TabBar
           aria-label="Áreas do Cadência"
           items={tabs}
-          value={value}
-          onValueChange={onChange}
+          value={selected}
+          onValueChange={select}
         />
       )}
     </nav>

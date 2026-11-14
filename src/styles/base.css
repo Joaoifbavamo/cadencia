@@ -1,0 +1,294 @@
+/* base — canonical application styles. */
+@font-face {
+  font-family: "Manrope Variable";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url("@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2")
+    format("woff2");
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Manrope Variable", Manrope, sans-serif;
+  font-optical-sizing: auto;
+  -webkit-text-size-adjust: 100%;
+  scrollbar-color: var(--muted) var(--bg);
+}
+
+body {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  cursor: pointer;
+  touch-action: manipulation;
+  background: none;
+  border: 0;
+  color: inherit;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+a {
+  color: inherit;
+  text-underline-offset: 4px;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(2rem, 3.3vw, 2.8rem);
+  font-weight: 750;
+  line-height: 1.13;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+h2 {
+  font-size: 1.25rem;
+  font-weight: 650;
+  line-height: 1.3;
+  letter-spacing: -0.025em;
+}
+
+h3 {
+  font-size: 0.94rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+p {
+  max-width: 70ch;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: var(--text-label);
+  font-weight: 650;
+  color: var(--ink);
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  min-height: var(--control-height);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--control-radius);
+  background: var(--surface);
+  color: var(--ink);
+  padding: 11px 13px;
+  font-size: 1rem;
+  caret-color: var(--ink);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--placeholder);
+  opacity: 1;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 88px;
+}
+
+input[type="checkbox"] {
+  width: 20px;
+  min-height: 20px;
+  accent-color: var(--ink);
+}
+
+.primary,
+.secondary,
+.danger-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: var(--control-height);
+  padding: 13px 20px;
+  font-size: 0.88rem;
+  font-weight: 750;
+  line-height: 1.3;
+  border-radius: 5px;
+  border: 1px solid var(--ink);
+  text-decoration: none;
+}
+
+.primary,
+.danger-button {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.primary:hover,
+.danger-button:hover {
+  background: var(--ink-hover);
+}
+
+.secondary {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+
+.secondary:hover {
+  background: var(--surface-alt);
+}
+
+.icon {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 5px;
+}
+
+.icon:hover {
+  background: var(--surface-alt);
+}
+
+.text-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px 2px;
+  font-size: 0.79rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.text-button:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.muted,
+.fine {
+  color: var(--muted);
+}
+
+.fine {
+  font-size: 0.75rem;
+  line-height: 1.7;
+  margin-top: 14px;
+}
+
+.error,
+.feedback,
+.sync-error {
+  background: var(--surface-alt);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  padding: 14px 16px;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin: 16px 0;
+  border-radius: 4px;
+}
+
+.error {
+  border-color: var(--ink);
+}
+
+.danger {
+  color: var(--ink);
+}
+
+.button-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+label,
+input,
+select,
+textarea {
+  min-width: 0;
+}
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+input:not([type="checkbox"]):not([type="radio"]),
+select {
+  min-height: var(--control-height);
+}
+select {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* Keep the native picker while giving its collapsed field a bounded width. */
+select:not([multiple]) {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-inline-end: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23777777' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 12px center;
+  background-size: 16px 16px;
+  background-repeat: no-repeat;
+}

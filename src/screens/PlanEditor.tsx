@@ -142,7 +142,7 @@ export default function PlanEditor({
     );
   return (
     <>
-      <div className="page-title">
+      <div className="page-title editor-toolbar">
         <div>
           <h1>Meu treino</h1>
           <p className="muted">Sua ficha, do seu jeito.</p>
@@ -191,6 +191,11 @@ export default function PlanEditor({
           <Save size={18} /> {saving ? "Salvando…" : "Salvar ficha"}
         </button>
       </div>
+      {message && (
+        <p role="status" className="feedback">
+          {message}
+        </p>
+      )}
       <p className="editor-note">
         Treinos já iniciados mantêm a ficha original. Trocar um exercício ou
         aparelho exige uma referência de carga própria.
@@ -380,7 +385,7 @@ export default function PlanEditor({
                       />
                     </label>
                   ))}
-                  <label>
+                  <label className="wide">
                     Unidade
                     <select
                       value={e.unit}
@@ -397,7 +402,7 @@ export default function PlanEditor({
                       <option value="body">Carga adicional</option>
                     </select>
                   </label>
-                  <label>
+                  <label className="wide">
                     Aquecimento
                     <select
                       value={e.warm}
@@ -518,11 +523,6 @@ export default function PlanEditor({
       >
         <Plus size={18} /> Adicionar dia de treino
       </button>
-      {message && (
-        <p role="status" className="feedback">
-          {message}
-        </p>
-      )}
     </>
   );
 }

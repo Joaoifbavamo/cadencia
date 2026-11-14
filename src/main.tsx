@@ -23,4 +23,3 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
   const saved = localStorage.getItem("cadencia-theme");
   applyTheme(saved === "light" || saved === "dark" ? saved : "system");
 });
-import "./quick-entry.css";

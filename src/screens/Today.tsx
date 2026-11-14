@@ -61,7 +61,7 @@ export default function Today({
     setChoiceError("");
     try {
       await model.save(
-        profileDoc?.id ?? uid(),
+        profileDoc?.id ?? model.singletonIds?.profile ?? uid(),
         "profile",
         {
           ...model.profile,
@@ -328,7 +328,10 @@ export default function Today({
       )}
       {removal.controls}
       {choose && (
-        <Sheet title="Qual treino vai fazer?" onClose={() => setChoose(false)}>
+        <Sheet
+          title="Qual treino vai fazer?"
+          onClose={() => !choosing && setChoose(false)}
+        >
           <p>
             A escolha vale só para hoje e sincroniza com sua conta. Trocar não
             apaga séries nem altera sua divisão semanal.

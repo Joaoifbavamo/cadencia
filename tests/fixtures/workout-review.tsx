@@ -6,7 +6,6 @@ import { demoPlan } from "../../src/demo.ts";
 import type { Entity, Kind } from "../../src/domain.ts";
 import type { Model } from "../../src/model.ts";
 import "../../src/styles.css";
-import "../../src/quick-entry.css";
 
 const mode = new URLSearchParams(location.search).get("mode");
 const workout = {

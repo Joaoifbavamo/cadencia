@@ -1,0 +1,757 @@
+/* adaptive — canonical application styles. */
+.training .app-footer {
+  display: none;
+}
+
+@media (max-width: 1050px) {
+  .sidebar {
+    width: 205px;
+    padding: 32px 17px;
+  }
+  .main-column {
+    margin-left: 205px;
+  }
+  .app-top {
+    padding-inline: 32px;
+  }
+  main {
+    padding-inline: 32px;
+  }
+  .app-footer {
+    padding-inline: 32px;
+  }
+  .demo-notice {
+    padding-inline: 32px;
+  }
+  .login-story {
+    padding: 40px;
+  }
+  .login-form {
+    padding-inline: 34px;
+  }
+  .update-notice {
+    padding-inline: 32px;
+  }
+}
+
+@media (max-width: 760px) {
+  .sidebar {
+    display: none;
+  }
+  .main-column {
+    margin: 0;
+  }
+  .app-top {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    padding: env(safe-area-inset-top) 24px 0;
+    gap: 10px;
+  }
+  .mobile-brand {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 800;
+    letter-spacing: -0.045em;
+  }
+  .mobile-brand svg {
+    width: 25px;
+    height: 25px;
+  }
+  .desktop-top-label {
+    display: none;
+  }
+  .mobile-settings {
+    display: flex;
+    width: 36px;
+    height: 44px;
+  }
+  .sync-status {
+    font-size: 0.75rem;
+    gap: 5px;
+  }
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 6;
+    justify-content: space-around;
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+  }
+  .bottom-nav button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 4px 7px;
+    font-size: 0.75rem;
+    font-weight: 550;
+  }
+  .bottom-nav button.active {
+    color: var(--ink);
+    font-weight: 800;
+  }
+  .bottom-nav button.active svg {
+    stroke-width: 2.4;
+  }
+  main {
+    padding: 27px 24px 115px;
+    min-height: calc(100dvh - 70px);
+  }
+  .page-title {
+    gap: 14px;
+  }
+  .page-title h1 {
+    line-height: 1.15;
+  }
+  .page-title > .primary {
+    font-size: 0.75rem;
+    padding: 10px 12px;
+    min-height: 46px;
+  }
+  .today-date {
+    margin-top: 10px;
+  }
+  .today-v2 .page-title > .text-button {
+    font-size: 0.75rem;
+  }
+  .workout-card-heading > .text-button {
+    font-size: 0.75rem;
+  }
+  .start-workout {
+    margin-top: 23px;
+    min-height: 55px;
+  }
+  .today-workout .time-note {
+    font-size: 0.75rem;
+  }
+  .preview-row {
+    gap: 14px;
+    padding: 19px 0;
+  }
+  .preview-row h3 {
+    font-size: 0.84rem;
+  }
+  .preview-row p {
+    font-size: 0.75rem;
+    line-height: 1.8;
+  }
+  .row-order {
+    font-size: 0.75rem;
+    width: 18px;
+  }
+  .completed-session {
+    gap: 10px;
+  }
+  .completed-session b {
+    font-size: 0.8rem;
+  }
+  .completed-session p {
+    font-size: 0.75rem;
+  }
+  .completed-session .text-button {
+    font-size: 0.75rem;
+  }
+  .app-footer {
+    display: none;
+  }
+  .demo-notice {
+    padding: 8px 24px;
+    gap: 8px;
+  }
+  .demo-notice .text-button {
+    padding: 0;
+    min-height: 30px;
+  }
+  .sync-error {
+    margin: 0 24px 12px;
+    font-size: 0.75rem;
+  }
+  .update-notice {
+    padding: 8px 24px;
+    font-size: 0.75rem;
+  }
+  .update-notice .text-button {
+    font-size: 0.75rem;
+  }
+  .training .app-top,
+  .training .bottom-nav {
+    display: none;
+  }
+  .training main {
+    padding: calc(6px + env(safe-area-inset-top)) 24px
+      calc(30px + env(safe-area-inset-bottom));
+  }
+  .training .demo-notice {
+    padding-block: 6px;
+    font-size: 0.75rem;
+  }
+  .sheet {
+    inset: auto 0 0;
+    width: 100%;
+    max-height: 88dvh;
+    padding: 21px 24px calc(27px + env(safe-area-inset-bottom));
+    border-bottom: 0;
+  }
+  .sheet-top h2 {
+    font-size: 1.2rem;
+  }
+  .sheet p {
+    font-size: 0.78rem;
+  }
+  .month-title {
+    margin-bottom: 10px;
+  }
+  .month-title h2 {
+    font-size: 1rem;
+  }
+  .calendar-grid {
+    gap: 4px;
+  }
+  .calendar-grid button {
+    min-height: 48px;
+  }
+  .calendar-grid button b {
+    font-size: 0.79rem;
+  }
+  .day-label {
+    font-size: 0.75rem;
+    padding: 7px;
+  }
+  .calendar-detail {
+    margin-top: 27px;
+  }
+  .schedule-form {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .schedule-form > .primary {
+    width: 100%;
+  }
+  .agenda-row label {
+    max-width: 200px;
+  }
+  .progress-filters {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .chart-panel {
+    padding-top: 21px;
+    margin-bottom: 30px;
+  }
+  .chart-panel > .muted {
+    font-size: 0.75rem;
+  }
+  th,
+  td {
+    padding: 13px 7px;
+    font-size: 0.75rem;
+  }
+  th {
+    font-size: 0.75rem;
+  }
+  .empty {
+    padding: 55px 0;
+  }
+  .empty h2 {
+    font-size: 1.8rem;
+  }
+  .empty p {
+    font-size: 0.8rem;
+  }
+  .editor-note {
+    font-size: 0.75rem;
+  }
+  .workout-editor {
+    padding-top: 19px;
+  }
+  .editor-workout-title {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .editor-workout-title label:first-child {
+    flex-basis: 100%;
+  }
+  .editor-workout-title label:nth-child(2) {
+    flex: 1;
+  }
+  .editor-summary b {
+    font-size: 0.8rem;
+  }
+  .editor-summary div > span {
+    font-size: 0.75rem;
+  }
+  .exercise-fields {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .editor-actions {
+    gap: 8px;
+  }
+  .editor-actions .secondary {
+    font-size: 0.75rem;
+    padding: 10px 12px;
+  }
+  .settings-section {
+    padding: 26px 0;
+  }
+  .settings-section p {
+    font-size: 0.77rem;
+  }
+  .settings-section .fine {
+    font-size: 0.75rem;
+  }
+  .form-pair {
+    grid-template-columns: 1fr;
+    gap: 1px;
+  }
+  .settings-section .button-row .secondary {
+    width: 100%;
+  }
+  .theme-control button {
+    font-size: 0.75rem;
+    padding: 8px 10px;
+  }
+  .notification-checks li {
+    font-size: 0.75rem;
+  }
+  .notification-checks b {
+    font-size: 0.75rem;
+  }
+  .notification-settings > .primary,
+  .setup-help > .primary,
+  .setup-help > .secondary,
+  .notification-options > .primary {
+    width: 100%;
+    font-size: 0.78rem;
+  }
+  .notification-options form {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .notification-options form label {
+    max-width: none;
+  }
+  .notification-options > .text-button {
+    font-size: 0.75rem;
+  }
+  .install-intro {
+    gap: 16px;
+    padding-bottom: 25px;
+  }
+  .install-app-icon img {
+    width: 66px;
+    height: 66px;
+    border-radius: 14px;
+  }
+  .install-intro h2 {
+    font-size: 1.05rem;
+  }
+  .install-intro p {
+    font-size: 0.75rem;
+    margin-top: 7px;
+  }
+  .install-intro .installed {
+    font-size: 0.75rem;
+  }
+  .profile-download {
+    width: 100%;
+    font-size: 0.8rem;
+  }
+  .install-steps {
+    margin: 21px 0;
+  }
+  .install-steps li {
+    font-size: 0.75rem;
+  }
+  .install-steps span {
+    font-size: 0.75rem;
+  }
+  .public-install {
+    padding: 20px 24px 45px;
+  }
+  .public-install > .text-button {
+    margin-bottom: 20px;
+  }
+  .public-install h1 {
+    font-size: 1.9rem;
+  }
+  .conflict-versions {
+    grid-template-columns: 1fr;
+  }
+  .conflict-versions pre {
+    max-height: 130px;
+  }
+  .login-shell {
+    display: block;
+  }
+  .login-story {
+    display: none;
+  }
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    max-width: 460px;
+    padding: 26px 24px 38px;
+  }
+  .mobile-login-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.045em;
+    border-bottom: 1px solid var(--line);
+    padding: 8px 0 23px;
+    margin-bottom: 30px;
+    order: -2;
+  }
+  .mobile-login-brand svg {
+    width: 30px;
+    height: 30px;
+  }
+  .login-theme {
+    order: -1;
+    justify-content: flex-start;
+    margin-bottom: 27px;
+  }
+  .login-theme .theme-control {
+    max-width: 150px;
+  }
+  .login-form h2 {
+    font-size: 1.9rem;
+    line-height: 1.22;
+  }
+  .login-form > p {
+    font-size: 0.78rem;
+    margin: 17px 0 27px;
+  }
+  .login-form form {
+    gap: 19px;
+  }
+  .login-form form > .primary {
+    font-size: 0.83rem;
+  }
+  .login-form > .fine {
+    font-size: 0.75rem;
+    line-height: 1.8;
+  }
+  .login-form > .text-button {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 360px) {
+  main {
+    padding-inline: 20px;
+  }
+  .app-top {
+    padding-inline: 20px;
+  }
+  .training main {
+    padding-inline: 20px;
+  }
+  .mobile-brand {
+    font-size: 1.1rem;
+  }
+  .sync-status {
+    font-size: 0.75rem;
+  }
+  .bottom-nav button {
+    min-width: 50px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *:before,
+  *:after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .sheet::backdrop {
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --line: #777;
+    --line-strong: #444;
+    --muted: #333;
+  }
+  [data-theme="dark"] {
+    --line: #aaa;
+    --line-strong: #ccc;
+    --muted: #ddd;
+  }
+}
+
+.settings-disclosure {
+  padding-block: 0;
+}
+
+.settings-disclosure > summary {
+  display: flex;
+  align-items: center;
+  padding: 20px 0;
+  list-style: none;
+}
+
+.settings-disclosure > summary:after {
+  content: "+";
+  margin-left: auto;
+}
+
+.settings-disclosure[open] > summary:after {
+  content: "−";
+}
+
+.settings-disclosure > summary h2 {
+  margin: 0;
+}
+
+.settings-disclosure[open] {
+  padding-bottom: 24px;
+}
+
+@media (max-width: 760px) {
+  .app-top {
+    height: calc(58px + env(safe-area-inset-top));
+    border-bottom: 0;
+  }
+  .mobile-brand {
+    font-size: 1.125rem;
+  }
+  .sync-status:not(.pending) span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .sync-status {
+    margin-left: auto;
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
+  .bottom-nav {
+    padding-top: 6px;
+    border-top-color: var(--line);
+  }
+  main {
+    padding-top: 22px;
+  }
+  .page-title {
+    margin-bottom: 24px;
+  }
+  .page-title h1 {
+    font-size: 1.625rem;
+    font-weight: 700;
+  }
+  .today-date {
+    font-size: 0.8125rem;
+  }
+  .today-workout {
+    border: 0;
+    padding: 8px 0 24px;
+  }
+  .today-workout h2 {
+    font-weight: 650;
+  }
+  .today-workout > p {
+    font-size: 0.8125rem;
+  }
+  .today-workout .start-workout {
+    border-radius: 12px;
+    min-height: 54px;
+  }
+  .today-exercises {
+    margin-top: 0;
+  }
+  .today-exercises summary {
+    font-size: 0.875rem;
+  }
+  .today-exercises > .text-button {
+    font-size: 0.8125rem;
+  }
+  .demo-notice {
+    padding-block: 5px;
+    font-size: 0.75rem;
+    align-items: center;
+  }
+  .demo-notice .text-button {
+    font-size: 0.75rem;
+  }
+  .training main {
+    padding-top: calc(8px + env(safe-area-inset-top));
+  }
+  .settings-section {
+    padding-block: 22px;
+  }
+  .settings-section h2 {
+    font-size: 1rem;
+  }
+  .settings-disclosure {
+    padding-block: 0;
+  }
+}
+
+.notification-settings .section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.notification-settings .section-heading h2 {
+  margin: 0;
+}
+
+.notification-help {
+  margin-top: 14px;
+}
+
+.notification-help summary {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  padding: 11px 0;
+}
+
+@media (max-width: 760px) {
+  .sync-status.demo-sync span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
+
+/* Shared compact controls and legible mobile hierarchy. */
+@media (max-width: 760px) {
+  main {
+    padding-inline: max(20px, env(safe-area-inset-left))
+      max(20px, env(safe-area-inset-right));
+  }
+  .page-title {
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
+  .page-title > div {
+    min-width: 0;
+  }
+  .page-title h1 {
+    font-size: 1.75rem;
+  }
+  .page-title > .primary {
+    font-size: 0.875rem;
+  }
+  .page-title .muted {
+    font-size: 0.8125rem;
+  }
+  label {
+    font-size: 0.875rem;
+  }
+  input:not([type="checkbox"]):not([type="radio"]),
+  select {
+    min-height: 48px;
+    border-radius: 12px;
+    font-size: 16px;
+    padding: 10px 12px;
+  }
+  textarea {
+    border-radius: 12px;
+    font-size: 16px;
+  }
+  .primary,
+  .secondary,
+  .danger-button {
+    border-radius: 12px;
+    font-size: 0.875rem;
+  }
+  .settings-section h2 {
+    font-size: 1.125rem;
+  }
+  .settings-section p,
+  .install-steps span {
+    font-size: 0.875rem;
+    line-height: 1.65;
+  }
+  .settings-section .fine,
+  .notification-help,
+  .editor-note {
+    font-size: 0.8125rem;
+  }
+  .theme-control {
+    border-radius: 14px;
+    padding: 4px;
+  }
+  .theme-control button {
+    min-height: 44px;
+    font-size: 0.8125rem;
+    border-radius: 10px;
+  }
+  .editor-summary b {
+    font-size: 0.9375rem;
+    line-height: 1.4;
+  }
+  .editor-summary div > span {
+    font-size: 0.75rem;
+    line-height: 1.6;
+  }
+  .exercise-fields {
+    gap: 14px 12px;
+  }
+  .sheet {
+    padding-inline: max(20px, env(safe-area-inset-left))
+      max(20px, env(safe-area-inset-right));
+  }
+  .sheet-top {
+    top: -20px;
+  }
+  .sheet p {
+    font-size: 0.875rem;
+  }
+  .agenda-row:not(.agenda-session) {
+    flex-wrap: wrap;
+  }
+  .agenda-row:not(.agenda-session) > div:first-child {
+    flex-basis: 100%;
+  }
+  .calendar-grid {
+    gap: 3px;
+  }
+  .calendar-grid button {
+    min-height: 44px;
+    border-radius: 12px;
+  }
+  .editor-toolbar {
+    flex-wrap: nowrap;
+    align-items: flex-start;
+  }
+  .editor-toolbar h1 {
+    font-size: clamp(1.5rem, 6vw, 1.75rem);
+  }
+  .editor-toolbar > .primary {
+    flex: none;
+    gap: 6px;
+    padding-inline: 12px;
+  }
+}
+@media (max-width: 760px) {
+  html {
+    scroll-padding-top: calc(74px + env(safe-area-inset-top));
+    scroll-padding-bottom: calc(90px + env(safe-area-inset-bottom));
+  }
+}

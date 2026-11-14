@@ -71,3 +71,13 @@ Verificações e sugestões priorizadas em [AUDITORIA.md](AUDITORIA.md). A revis
 - Detector Impeccable executado uma vez:140 avisos consultivos apenas de rampa de fontes/raios/cores; campos compactos, vidro e círculo de progresso são escolhas do pedido. Capturas foram inspecionadas e o ícone que herdava dimensões do círculo foi corrigido.
 - npm audit: zero vulnerabilidades na consulta desta revisão. Não houve migração Supabase, acesso a novos segredos ou alteração de dados pessoais.
 - ActivityKit pesquisado na documentação Apple: Atividades ao Vivo na tela bloqueada/Ilha Dinâmica requerem app iOS e extensão WidgetKit/SwiftUI. Esta versão web entrega contagem animada interna e Web Push existente de fim; agendamento por minuto pode atrasar. Não foi alegada notificação animada bloqueada, alarme nativo exato, teste físico ou entrega real de push.
+
+## Revisão integral do frontend — 13/11/2026
+
+64 testes Node, 13 suítes de navegador Chrome e duas suítes WebKit passaram. Matriz: 19 superfícies/estados, claro/escuro, oito larguras entre 320–1440 px, texto ampliado e janelas; zero violações automatizadas dos critérios WCAG A/AA selecionados e zero erros de página nessa matriz. A tabela preserva rolagem interna se o texto ampliado exigir. Não é certificação ou teste de hardware físico.
+
+Revisão independente reproduziu retorno rápido/Voltar depois de aceitar descarte e confirmou a correção; também testou navegação repetida com CPU limitada. A fusão de estilos foi conferida por propriedade para manter o par carga/repetições. O seletor WebKit e o alinhamento durante redimensionamento receberam regressões próprias. Detector executado uma vez: 76 avisos consultivos de fontes/raios/cores. npm audit: zero vulnerabilidades.
+
+Arquitetura, referências e limites detalhados em [FRONTEND_REVISAO.md](FRONTEND_REVISAO.md). Resultados de produção e publicação são verificados na etapa de entrega.
+
+Produção local final: build preparado para Pages; teste instalável passou perfil disponível, cronômetro e primeira reabertura offline com cache HTTP desativado. Teste de movimento confirmou que as quatro novas telas montaram após o término da mola e a mesma instância de vidro foi preservada. O aviso de tamanho do chunk é consultivo; não houve falha de compilação. CSS publicado: 44,08 kB; JS: 688,67 kB antes de gzip; esses tamanhos não medem FPS.
