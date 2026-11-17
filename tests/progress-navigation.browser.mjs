@@ -32,10 +32,11 @@ try {
   );
   for (const width of [320, 375, 390, 430, 676]) {
     await page.setViewportSize({ width, height: 812 });
-    await expect(page.locator(".lg-tab")).toHaveCount(5);
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await expect(page.locator(".nav-tab")).toHaveCount(5);
     const bounds = await page.evaluate(() => {
       const nav = document.querySelector(".bottom-nav").getBoundingClientRect();
-      const tabs = [...document.querySelectorAll(".lg-tab")].map((tab) =>
+      const tabs = [...document.querySelectorAll(".nav-tab")].map((tab) =>
         tab.getBoundingClientRect(),
       );
       return {
@@ -50,10 +51,10 @@ try {
     expect(bounds.scroll).toBe(width);
     expect(bounds.first).toBeGreaterThanOrEqual(bounds.left);
     expect(bounds.last).toBeLessThanOrEqual(bounds.right + 0.1);
-    expect(bounds.last).toBeGreaterThanOrEqual(bounds.right - 4.2);
-    await page.locator(".lg-tab").nth(3).click();
+    expect(bounds.last).toBeGreaterThanOrEqual(bounds.right - 8);
+    await page.locator(".nav-tab").nth(3).click();
     await expect(page.locator("#current")).toHaveText("Evolução");
-    console.log("PASS glass bounds + click", width, bounds);
+    console.log("PASS navigation bounds + click", width, bounds);
   }
   await page.setViewportSize({ width: 375, height: 812 });
   await page.locator(".bottom-nav").evaluate((nav) => {
@@ -63,7 +64,7 @@ try {
   await page.waitForTimeout(100);
   const safe = await page.evaluate(() => {
     const nav = document.querySelector(".bottom-nav").getBoundingClientRect();
-    const last = [...document.querySelectorAll(".lg-tab")]
+    const last = [...document.querySelectorAll(".nav-tab")]
       .at(-1)
       .getBoundingClientRect();
     return { right: nav.right, last: last.right };
@@ -74,14 +75,13 @@ try {
     nav.style.removeProperty("right");
   });
   await page.waitForTimeout(100);
-  const bar = await page.locator(".lg-tab-bar").boundingBox();
-  await page.mouse.move(bar.x + 30, bar.y + 25);
-  await page.mouse.down();
-  await page.waitForTimeout(250);
-  await page.mouse.move(bar.x + bar.width - 30, bar.y + 25, { steps: 20 });
-  await page.mouse.up();
+  await page.locator(".nav-tab").nth(4).click();
   await expect(page.locator("#current")).toHaveText("Atividades");
-  await page.locator(".lg-tab").nth(1).focus();
+  await expect(page.locator(".nav-tab").nth(4)).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await page.locator(".nav-tab").nth(1).focus();
   await page.keyboard.press("Enter");
   await expect(page.locator("#current")).toHaveText("Ficha");
   await page.screenshot({
@@ -105,9 +105,9 @@ try {
   await page.getByRole("button", { name: "Ocultar navegação" }).click();
   const hiddenReads = await measure();
   console.log(
-    "Fixture layout rectangle reads / 500ms: visible glass",
+    "Fixture layout rectangle reads / 500ms: visible navigation",
     activeReads,
-    "unmounted glass",
+    "unmounted navigation",
     hiddenReads,
   );
   await expect(page.locator(".bottom-nav")).toHaveCount(0);
@@ -116,13 +116,17 @@ try {
   await expect(page.locator(".bottom-nav")).toHaveCount(0);
   await page.setViewportSize({ width: 375, height: 812 });
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await expect(page.locator(".static-nav")).toBeVisible();
-  await expect(page.locator(".lg-tab-bar")).toHaveCount(0);
+  await expect(page.locator(".cadencia-navigation")).toBeVisible();
+  expect(
+    await page
+      .locator(".nav-indicator")
+      .evaluate((e) => getComputedStyle(e).transitionDuration),
+  ).toBe("0s");
   await page.getByRole("button", { name: "Evolução", exact: true }).click();
   await expect(page.locator("#current")).toHaveText("Evolução");
   expect(errors).toEqual([]);
   console.log(
-    "PASS drag, keyboard, unmount in workout/desktop and reduced-motion fallback; zero page errors",
+    "PASS selection, keyboard, unmount in workout/desktop and reduced-motion fallback; zero page errors",
   );
 } finally {
   await browser.close();

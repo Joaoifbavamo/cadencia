@@ -68,7 +68,7 @@ export function buildHistoryIndex(docs: Entity[]) {
     history.sort(
       (a, b) =>
         b.session.actualDate.localeCompare(a.session.actualDate) ||
-        b.session.startedAt.localeCompare(a.session.startedAt) ||
+        Date.parse(b.session.startedAt) - Date.parse(a.session.startedAt) ||
         b.sessionId.localeCompare(a.sessionId),
     );
     byComparison.set(key, history);

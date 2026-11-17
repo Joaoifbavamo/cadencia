@@ -49,13 +49,13 @@ try {
   ).toBeNull();
   await page
     .locator(".bottom-nav")
-    .getByRole("tab", { name: "Agenda", exact: true })
+    .getByRole("button", { name: "Agenda", exact: true })
     .click();
   await expect(page).toHaveURL(/#\/agenda$/);
   await expect(page.locator("main h1")).toBeFocused();
   await page
     .locator(".bottom-nav")
-    .getByRole("tab", { name: "Evolução", exact: true })
+    .getByRole("button", { name: "Evolução", exact: true })
     .click();
   await expect(page).toHaveURL(/#\/evolucao$/);
   await page.goBack();
@@ -65,13 +65,13 @@ try {
   await expect(page).toHaveURL(/#\/evolucao$/);
   const evolution = page
     .locator(".bottom-nav")
-    .getByRole("tab", { name: "Evolução", exact: true });
+    .getByRole("button", { name: "Evolução", exact: true });
   await evolution.focus();
   await page.keyboard.press("ArrowRight");
   await expect(
     page
       .locator(".bottom-nav")
-      .getByRole("tab", { name: "Meu treino", exact: true }),
+      .getByRole("button", { name: "Meu treino", exact: true }),
   ).toBeFocused();
   await expect(page).toHaveURL(/#\/meu-treino$/);
   await page
@@ -90,7 +90,7 @@ try {
   await expect(page).toHaveURL(/#\/evolucao$/);
   await page
     .locator(".bottom-nav")
-    .getByRole("tab", { name: "Hoje", exact: true })
+    .getByRole("button", { name: "Hoje", exact: true })
     .click();
   await expect(page).toHaveURL(/#\/hoje$/);
   expect(
@@ -100,7 +100,7 @@ try {
   ).toBeNull();
   await page
     .locator(".bottom-nav")
-    .getByRole("tab", { name: "Meu treino", exact: true })
+    .getByRole("button", { name: "Meu treino", exact: true })
     .click();
   await expect(
     page.getByRole("textbox", { name: "Nome da ficha", exact: true }),

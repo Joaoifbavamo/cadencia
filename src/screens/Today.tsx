@@ -1,5 +1,4 @@
 import { usePausedRemoval } from "../PausedRemoval.tsx";
-import { Button as GlassButton } from "glisse";
 import { useState } from "react";
 import { ArrowRight, Play, Check, Plus, ChevronDown } from "lucide-react";
 import type { Model } from "../model.ts";
@@ -131,9 +130,9 @@ export default function Today({
           </div>
           <div className="workout-card-heading">
             <h2>{draft.payload.workout.name}</h2>
-            <GlassButton className="change-workout" onClick={openChoice}>
+            <button className="secondary change-workout" onClick={openChoice}>
               Trocar treino <ChevronDown size={16} />
-            </GlassButton>
+            </button>
           </div>
           <p>{draftSets} séries registradas · continue de onde parou</p>
           <button
@@ -153,9 +152,9 @@ export default function Today({
         <section className="today-workout">
           <div className="workout-card-heading">
             <h2>{selected.name}</h2>
-            <GlassButton className="change-workout" onClick={openChoice}>
+            <button className="secondary change-workout" onClick={openChoice}>
               Trocar treino <ChevronDown size={16} />
-            </GlassButton>
+            </button>
           </div>
           <p>{selected.exercises.length} exercícios</p>
           <button

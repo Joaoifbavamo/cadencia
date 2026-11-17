@@ -63,6 +63,15 @@ test("timestamps compare instants across offsets; a later completion is not prio
   });
   assert.equal(previousPerformance(docs, e, current), undefined);
 });
+test("latest fallback orders same-day sessions by instant, not written offset", () => {
+  const docs = [
+    ...fixture("early", "2025-12-20", { startedAt: "2025-12-20T12:00:00Z" }),
+    ...fixture("late", "2025-12-20", {
+      startedAt: "2025-12-20T10:00:00-03:00",
+    }),
+  ];
+  assert.equal(previousPerformance(docs, e, current)?.sessionId, "late");
+});
 test("cleanup keeps completed comparison when a newer paused session has sets", () => {
   const docs = [
     ...fixture("done", "2025-12-20"),

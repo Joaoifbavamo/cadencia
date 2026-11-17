@@ -1,7 +1,7 @@
-/** Let Glisse finish its real spring before mounting a potentially heavy page. */
-export function afterGlassSettles(commit: () => void): () => void {
-  const bar = document.querySelector<HTMLElement>(".bottom-nav .lg-tab-bar");
-  if (!bar || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+/** Allow the lightweight selection indicator to settle before mounting a heavy page. */
+export function afterNavigationSettles(commit: () => void): () => void {
+  const nav = document.querySelector<HTMLElement>(".bottom-nav");
+  if (!nav || matchMedia("(prefers-reduced-motion: reduce)").matches) {
     commit();
     return () => {};
   }
@@ -11,43 +11,34 @@ export function afterGlassSettles(commit: () => void): () => void {
     main.inert = true;
     main.setAttribute("aria-busy", "true");
   }
-  let stopped = false,
-    frame = 0,
-    paints = 0;
+  let stopped = false;
   const cleanup = () => {
     stopped = true;
+    clearTimeout(timer);
+    nav.removeEventListener("transitionend", settled);
+    document.removeEventListener("visibilitychange", visibility);
     if (main) {
       main.inert = wasInert;
       main.removeAttribute("aria-busy");
     }
-    cancelAnimationFrame(frame);
-    clearTimeout(fallback);
-    document.removeEventListener("visibilitychange", visibility);
   };
   const finish = () => {
     if (stopped) return;
     cleanup();
     commit();
   };
-  const check = () => {
-    if (stopped) return;
-    paints++;
+  const settled = (event: TransitionEvent) => {
     if (
-      document.hidden ||
-      !bar.isConnected ||
-      (paints > 1 &&
-        !bar.hasAttribute("data-away") &&
-        !bar.hasAttribute("data-lensing") &&
-        !bar.hasAttribute("data-lifted"))
+      (event.target as Element)?.classList.contains("nav-indicator") &&
+      event.propertyName === "transform"
     )
       finish();
-    else frame = requestAnimationFrame(check);
   };
   const visibility = () => {
     if (document.hidden) finish();
   };
-  const fallback = setTimeout(finish, 900);
+  const timer = setTimeout(finish, 300);
+  nav.addEventListener("transitionend", settled);
   document.addEventListener("visibilitychange", visibility);
-  frame = requestAnimationFrame(check);
   return cleanup;
 }

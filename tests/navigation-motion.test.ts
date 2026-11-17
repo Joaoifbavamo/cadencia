@@ -1,47 +1,46 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { afterGlassSettles } from "../src/navigation-motion.ts";
-test("page waits for actual glass settlement; canceled transitions never mount obsolete pages", () => {
-  const callbacks = new Map<number, FrameRequestCallback>();
-  let next = 0,
-    moving = true,
+import { afterNavigationSettles } from "../src/navigation-motion.ts";
+test("navigation settles before commit; cancellation cannot mount an obsolete page", () => {
+  let handler: (event: any) => void = () => {},
     commits = 0;
+  const main = { inert: false, setAttribute() {}, removeAttribute() {} };
+  const nav = {
+    addEventListener(_name: string, fn: any) {
+      handler = fn;
+    },
+    removeEventListener() {},
+  };
   Object.assign(globalThis, {
     document: {
-      querySelector: (selector: string) =>
-        selector === "main"
-          ? null
-          : {
-              isConnected: true,
-              hasAttribute: (name: string) => moving && name === "data-away",
-            },
+      querySelector: (s: string) => (s === "main" ? main : nav),
       hidden: false,
-      addEventListener: () => {},
-      removeEventListener: () => {},
+      addEventListener() {},
+      removeEventListener() {},
     },
     matchMedia: () => ({ matches: false }),
-    requestAnimationFrame: (fn: FrameRequestCallback) => {
-      callbacks.set(++next, fn);
-      return next;
-    },
-    cancelAnimationFrame: (id: number) => callbacks.delete(id),
   });
-  const tick = () => {
-    const queue = [...callbacks.values()];
-    callbacks.clear();
-    queue.forEach((fn) => fn(0));
+  const event = {
+    propertyName: "transform",
+    target: { classList: { contains: (s: string) => s === "nav-indicator" } },
   };
-  const cancel = afterGlassSettles(() => commits++);
-  tick();
-  tick();
-  assert.equal(commits, 0);
+  const cancel = afterNavigationSettles(() => commits++);
+  assert.equal(main.inert, true);
   cancel();
-  moving = false;
-  tick();
+  handler(event);
   assert.equal(commits, 0);
-  afterGlassSettles(() => commits++);
-  tick();
-  assert.equal(commits, 0);
-  tick();
+  assert.equal(main.inert, false);
+  afterNavigationSettles(() => commits++);
+  handler(event);
+  handler(event);
   assert.equal(commits, 1);
+  assert.equal(main.inert, false);
+});
+test("reduced motion commits immediately", () => {
+  Object.assign(globalThis, { matchMedia: () => ({ matches: true }) });
+  let called = false;
+  afterNavigationSettles(() => {
+    called = true;
+  });
+  assert.equal(called, true);
 });

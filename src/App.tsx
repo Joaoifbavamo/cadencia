@@ -1,4 +1,4 @@
-import { afterGlassSettles } from "./navigation-motion.ts";
+import { afterNavigationSettles } from "./navigation-motion.ts";
 import MobileNavigation from "./MobileNavigation.tsx";
 import { parseRoute, routeHash, type AppRoute } from "./router.ts";
 import { clearEditorDraft } from "./editor-draft.ts";
@@ -302,7 +302,7 @@ export default function App() {
       heading.focus({ preventScroll: true });
     }
   }, [tab, sessionId, ready]);
-  const openRoute = useCallback((route: AppRoute, glass = false) => {
+  const openRoute = useCallback((route: AppRoute, animate = false) => {
     cancelScreenCommit.current();
     if (routeHash(route) !== location.hash) {
       historyPosition.current += 1;
@@ -319,12 +319,12 @@ export default function App() {
         setTab(route.tab);
         setSessionId(route.sessionId);
       });
-    if (glass) cancelScreenCommit.current = afterGlassSettles(commit);
+    if (animate) cancelScreenCommit.current = afterNavigationSettles(commit);
     else commit();
   }, []);
   const openSession = (id: string) => openRoute({ tab: "Hoje", sessionId: id });
   const navigate = useCallback(
-    (next: string, glass = false) => {
+    (next: string, animate = false) => {
       const currentRoute = parseRoute(location.hash);
       if (next === currentRoute?.tab && !currentRoute.sessionId) return true;
       if (
@@ -340,7 +340,7 @@ export default function App() {
         resetEditorPending.current = true;
       }
       setPlanDirty(false);
-      openRoute({ tab: next, sessionId: null }, glass);
+      openRoute({ tab: next, sessionId: null }, animate);
       return true;
     },
     [tab, planDirty, sessionId, account, openRoute],
@@ -647,7 +647,7 @@ export default function App() {
           </div>
         )}
         <UpdateNotice defer={Boolean(sessionId) || tab === "Meu treino"} />
-        <main data-glisse-backdrop>
+        <main>
           {sessionId ? (
             <Workout
               model={model}

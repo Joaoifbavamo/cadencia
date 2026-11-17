@@ -1,35 +1,13 @@
 import {
   memo,
-  useCallback,
   useEffect,
   useLayoutEffect,
-  useMemo,
+  useRef,
   useState,
+  type CSSProperties,
+  type ReactNode,
 } from "react";
-import { TabBar } from "glisse";
-import type { CSSProperties, ReactNode } from "react";
 import "./mobile-navigation.css";
-const accessibilityQueries = [
-  "(prefers-reduced-transparency: reduce)",
-  "(prefers-contrast: more)",
-  "(prefers-reduced-motion: reduce)",
-];
-function useMediaQueries(queries: string[]) {
-  const [matches, setMatches] = useState(() =>
-    queries.some((q) => matchMedia(q).matches),
-  );
-  useEffect(() => {
-    const media = queries.map((q) => matchMedia(q));
-    const change = () => setMatches(media.some((q) => q.matches));
-    change();
-    for (const query of media) query.addEventListener("change", change);
-    return () => {
-      for (const query of media) query.removeEventListener("change", change);
-    };
-  }, [queries]);
-  return matches;
-}
-const mobileQueries = ["(max-width: 760px)"];
 type Props = {
   items: { name: string; icon: ReactNode }[];
   value: string | null;
@@ -37,6 +15,7 @@ type Props = {
 };
 function Navigation({ items, value, onChange }: Props) {
   const [selected, setSelected] = useState(value);
+  const buttons = useRef<(HTMLButtonElement | null)[]>([]);
   useLayoutEffect(() => setSelected(value), [value]);
   useEffect(() => {
     const restore = () => setSelected(value);
@@ -47,61 +26,75 @@ function Navigation({ items, value, onChange }: Props) {
       window.removeEventListener("hashchange", restore);
     };
   }, [value]);
-  const select = useCallback(
-    (next: string) => {
-      if (onChange(next) !== false) setSelected(next);
-    },
-    [onChange],
-  );
-  const simple = useMediaQueries(accessibilityQueries);
-  const tabs = useMemo(
-    () => items.map((n) => ({ value: n.name, label: n.name, icon: n.icon })),
-    [items],
-  );
+  const select = (next: string) => {
+    if (onChange(next) === false) return false;
+    setSelected(next);
+    return true;
+  };
   return (
     <nav
-      style={{ "--cadencia-tab-count": items.length } as CSSProperties}
-      className={
-        "bottom-nav cadencia-navigation " +
-        (simple ? "static-nav" : "glisse-nav")
-      }
+      className="bottom-nav cadencia-navigation"
       aria-label="Navegação principal"
+      style={
+        {
+          "--cadencia-tab-count": items.length,
+          "--active-index": Math.max(
+            0,
+            items.findIndex((n) => n.name === selected),
+          ),
+        } as CSSProperties
+      }
+      onKeyDown={(event) => {
+        const index = buttons.current.indexOf(
+          event.target as HTMLButtonElement,
+        );
+        if (
+          index < 0 ||
+          !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)
+        )
+          return;
+        event.preventDefault();
+        const next =
+          event.key === "Home"
+            ? 0
+            : event.key === "End"
+              ? items.length - 1
+              : (index + (event.key === "ArrowRight" ? 1 : -1) + items.length) %
+                items.length;
+        if (select(items[next].name)) buttons.current[next]?.focus();
+      }}
     >
-      {simple ? (
-        items.map((n) => (
+      <div className="nav-track">
+        <span className="nav-indicator" aria-hidden="true" />
+        {items.map((n, i) => (
           <button
             key={n.name}
+            ref={(button) => {
+              buttons.current[i] = button;
+            }}
             type="button"
-            className={selected === n.name ? "active" : ""}
-            aria-current={value === n.name ? "page" : undefined}
+            className="nav-tab"
+            aria-current={selected === n.name ? "page" : undefined}
             onClick={() => select(n.name)}
           >
             {n.icon}
             <span>{n.name}</span>
           </button>
-        ))
-      ) : (
-        <TabBar
-          aria-label="Áreas do Cadência"
-          items={tabs}
-          value={selected}
-          onValueChange={select}
-        />
-      )}
+        ))}
+      </div>
     </nav>
   );
 }
 export default memo(function MobileNavigation(props: Props) {
-  const mobile = useMediaQueries(mobileQueries);
-  const [visible, setVisible] = useState(() => !document.hidden);
+  const [mobile, setMobile] = useState(
+    () => matchMedia("(max-width: 760px)").matches,
+  );
   useEffect(() => {
-    const change = () => setVisible(!document.hidden);
-    document.addEventListener("visibilitychange", change);
-    return () => document.removeEventListener("visibilitychange", change);
+    const query = matchMedia("(max-width: 760px)");
+    const change = () => setMobile(query.matches);
+    query.addEventListener("change", change);
+    change();
+    return () => query.removeEventListener("change", change);
   }, []);
-  // A display:none optical scene still has its own animation/measurement loop.
-  // Mount it only while the navigation can actually be seen and used.
-  return mobile && visible && props.value !== null ? (
-    <Navigation {...props} />
-  ) : null;
+  return mobile && props.value !== null ? <Navigation {...props} /> : null;
 });

@@ -18,7 +18,11 @@ try {
   await page.getByRole("button", { name: "Conhecer a demonstração" }).click();
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
-  const nav = (name) => page.getByRole("tab", { name, exact: true }).click();
+  const nav = (name) =>
+    page
+      .locator(".bottom-nav")
+      .getByRole("button", { name, exact: true })
+      .click();
   const settled = async () => {
     await expect(page.locator("main")).not.toHaveAttribute("aria-busy", "true");
     expect(await page.locator("main").evaluate((main) => main.inert)).toBe(
@@ -34,7 +38,7 @@ try {
   await nav("Hoje");
   await settled();
   await expect(name).toHaveValue("Rascunho preservado");
-  await expect(page.locator('.lg-tab[aria-selected="true"]')).toHaveText(
+  await expect(page.locator('.nav-tab[aria-current="page"]')).toHaveText(
     "Meu treino",
   );
 
@@ -49,7 +53,7 @@ try {
     await settled();
     await expect(page.locator("main h1")).toHaveText("Meu treino");
     await expect(name).toHaveValue(original);
-    await expect(page.locator('.lg-tab[aria-selected="true"]')).toHaveText(
+    await expect(page.locator('.nav-tab[aria-current="page"]')).toHaveText(
       "Meu treino",
     );
     expect(

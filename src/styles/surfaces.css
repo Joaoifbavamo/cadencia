@@ -1,20 +1,4 @@
-/* surfaces-and-glass — canonical application styles. */
-/* iPhone-inspired functional glass. Content remains opaque; no nested glass. */
-
-:root {
-  --glass-fill: rgba(255, 255, 255, 0.84);
-  --glass-edge: rgba(255, 255, 255, 0.94);
-  --glass-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-
-:root[data-theme="dark"] {
-  --glass-fill: rgba(28, 28, 28, 0.86);
-  --glass-edge: rgba(255, 255, 255, 0.18);
-  --glass-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
-
+/* Solid application surfaces and shared layouts. */
 .home-week {
   margin: 8px 0 28px;
 }
@@ -249,25 +233,6 @@
   .sheet {
     border-radius: 26px 26px 0 0;
   }
-  @supports (
-    (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
-  ) {
-    .bottom-nav,
-    .app-top,
-    .sheet {
-      background: var(--glass-fill);
-      -webkit-backdrop-filter: blur(24px) saturate(1.25);
-      backdrop-filter: blur(24px) saturate(1.25);
-    }
-    .bottom-nav {
-      border-color: var(--glass-edge);
-      box-shadow: var(--glass-shadow);
-    }
-    .sheet {
-      border-color: var(--glass-edge);
-      box-shadow: var(--glass-shadow);
-    }
-  }
 }
 
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
@@ -284,58 +249,11 @@
   }
 }
 
-/* Glisse owns the optical layer. Keep navigation semantics and an opaque accessibility fallback. */
-
-:root {
-  --lg-fill: var(--ink);
-  --lg-foreground: var(--ink);
-  --lg-muted: var(--muted);
-}
-
-.bottom-nav.glisse-nav {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-
-.glisse-nav .lg-tab-bar {
-  width: 100%;
-  --lg-tab-width: calc((100vw - 32px) / 5);
-  --lg-tab-height: 52px;
-  --lg-glass-dispersion: 0;
-  font-family: inherit;
-}
-
-.glisse-nav .lg-tab {
-  flex: none;
-  min-height: 52px;
-  min-width: 0;
-  padding: 0;
-  border-radius: 26px;
-  transform: none;
-}
-
-.glisse-nav .lg-tab-face {
-  display: contents;
-}
-
-.glisse-nav .lg-tab-label {
-  font-size: 10px;
-}
-
-.glisse-nav .lg-tab-copy {
-  font-family: inherit;
-}
-
 .change-workout {
   white-space: nowrap;
   font: inherit;
   font-size: 0.8125rem;
   flex-shrink: 0;
-  --lg-glass-dispersion: 0;
   color: var(--ink);
 }
 
@@ -379,8 +297,6 @@
     background: var(--surface);
     border: 1px solid var(--line-strong);
     box-shadow: none;
-    --lg-filter: none;
-    --lg-blur: 0px;
   }
   .change-workout::before,
   .change-workout::after {
@@ -469,9 +385,6 @@
   .today-v2 .home-week > div {
     flex-wrap: wrap;
     gap: 6px 12px;
-  }
-  .glisse-nav .lg-tab-label {
-    font-size: 10px;
   }
 }
 

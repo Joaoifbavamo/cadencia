@@ -23,11 +23,15 @@ async function reachable() {
   }
 }
 const suites = webkit
-  ? ["progress-navigation.browser.mjs", "frontend-integral.browser.mjs", "training-insights.browser.mjs"]
+  ? [
+      "progress-navigation.browser.mjs",
+      "frontend-integral.browser.mjs",
+      "training-insights.browser.mjs",
+    ]
   : production
     ? ["pwa.mjs"]
     : motion
-      ? ["glisse-motion.browser.mjs"]
+      ? ["navigation-bar-motion.browser.mjs"]
       : [
           "guided-workout.browser.mjs",
           "workout-review.browser.mjs",

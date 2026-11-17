@@ -1,6 +1,6 @@
 ---
 name: Cadência
-description: Diário privado de treino, monocromático, com entrada rápida e Liquid Glass funcional.
+description: Diário privado de treino, monocromático, com entrada rápida e barra de navegação animada.
 colors:
   bg: '#ffffff'
   surface: '#ffffff'
@@ -43,7 +43,7 @@ rounded:
   numeric-field: '12px'
   action-guided: '14px'
   home-panel: '22px'
-  glass-nav: '30px'
+  navigation: '30px'
   dialog-desktop: '8px'
   dialog-mobile: '26px 26px 0 0'
 spacing:
@@ -69,11 +69,11 @@ Interface operacional para registrar o treino com uma mão, entre séries. Preto
 
 ## Fontes normativas
 
-Tokens comuns em tokens.css. styles.css define a ordem dos módulos base, shell, screens, auth, adaptive e surfaces-and-glass. Componentes com geometria própria usam guided-workout.css, mobile-navigation.css e progress-history.css. Alterar o módulo responsável em vez de acrescentar correções globais sucessivas.
+Tokens comuns em tokens.css. styles.css define a ordem dos módulos base, shell, screens, auth, adaptive e surfaces. Componentes com geometria própria usam guided-workout.css, mobile-navigation.css e progress-history.css. Alterar o módulo responsável em vez de acrescentar correções globais sucessivas.
 
 ## Estrutura e hierarquia
 
-Desktop usa navegação lateral; celular usa cabeçalho compacto e cinco destinos no Glisse. Ajustes ficam no cabeçalho. Conteúdo respeita as áreas seguras e tem largura mínima zero nos elementos flex/grid que precisam encolher.
+Desktop usa navegação lateral; celular usa cabeçalho compacto e cinco destinos em uma barra opaca. Ajustes ficam no cabeçalho. Conteúdo respeita as áreas seguras e tem largura mínima zero nos elementos flex/grid que precisam encolher.
 
 Títulos, campos e ações seguem uma hierarquia comum. Títulos longos de treino ocupam a largura disponível; Trocar treino aparece separado no celular. Informações secundárias ficam em seções recolhíveis, mantendo as setas conforme orientação do usuário. Mensagens de erro aparecem na área da ação ou no diálogo ativo.
 
@@ -93,13 +93,9 @@ Aquecimento → uma série válida → descanso → próxima etapa. Aquecimento,
 
 A tela de descanso usa círculo de progresso, numerais grandes e ícone separado de 22 px. Som tem teste explícito e respeita limitações da plataforma. Sessões concluídas permitem corrigir séries existentes sem alterar a conclusão ou criar um novo descanso.
 
-## Liquid Glass e movimento
+## Navegação e movimento
 
-Usar Glisse 0.6.0 original para a camada funcional de navegação. Preservar lente, refração, crescimento, mola e drag. Conteúdo e campos permanecem opacos. A largura das abas deriva do contêiner no próprio layout, incluindo margens/áreas seguras.
-
-A seleção responde imediatamente; a montagem da próxima tela aguarda as flags reais de término da mola. Trocas rápidas substituem a rota pendente; Voltar e cancelamento preservam seleção, edição e foco. A navegação é desmontada quando invisível, durante treino, em desktop e em segundo plano.
-
-Movimento/transparência reduzidos e maior contraste recebem alternativa estática. Transições de etapa usam deslocamento curto sem bounce; a abertura em modo app mantém a marca aprovada. Não adicionar animações aos campos ou atrasos fixos para disfarçar trabalho pesado.
+Barra opaca, monocromática e sem Liquid Glass, conforme orientação do usuário. Indicador de seleção desliza por transform em 260 ms com desaceleração suave, acompanhado de deslocamento discreto do ícone. Não usar refração, filtros ópticos ou loops de medição. A página aguarda o indicador terminar, com cancelamento e fallback de 300 ms. O modo de movimento reduzido é imediato. Preservar clique, teclado, histórico de navegação e proteção de alterações não salvas.
 
 ## Janelas, temas e acessibilidade
 
