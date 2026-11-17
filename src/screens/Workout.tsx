@@ -535,6 +535,7 @@ function GuidedWorkout({
                   </p>
                 )}
                 <WorkingSetForm
+                  increment={model.profile.increment}
                   key={exercise.id + "-" + active + "-" + (editing !== null)}
                   exercise={exercise}
                   index={active}

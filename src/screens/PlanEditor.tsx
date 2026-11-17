@@ -7,6 +7,7 @@ import {
   clearEditorDraft,
 } from "../editor-draft.ts";
 import { download } from "../components.tsx";
+import { workoutSets, planExport } from "../experience.ts";
 import {
   uid,
   visible,
@@ -200,6 +201,55 @@ export default function PlanEditor({
         Treinos já iniciados mantêm a ficha original. Trocar um exercício ou
         aparelho exige uma referência de carga própria.
       </p>
+      <div className="plan-overview">
+        <p>
+          <b>{plan.workouts.length}</b> treinos ·{" "}
+          <b>{plan.workouts.reduce((n, w) => n + workoutSets(w), 0)}</b> séries
+          na ficha
+        </p>
+        <button
+          className="text-button"
+          onClick={() => {
+            try {
+              download(
+                "cadencia-minha-ficha.json",
+                JSON.stringify(planExport(plan), null, 2),
+              );
+            } catch {
+              setMessage(
+                "Revise nomes, séries e repetições da ficha antes de exportar.",
+              );
+              window.scrollTo({ top: 0 });
+            }
+          }}
+        >
+          Exportar esta ficha
+        </button>
+      </div>
+      {!!plan.workouts.length && (
+        <nav className="plan-day-links" aria-label="Ir para um dia da ficha">
+          {plan.workouts.map((w) => (
+            <a
+              key={w.id}
+              href={`#ficha-${w.id}`}
+              onClick={(event) => {
+                event.preventDefault();
+                const target = document.getElementById(`ficha-${w.id}`);
+                target?.scrollIntoView({
+                  behavior: matchMedia("(prefers-reduced-motion: reduce)")
+                    .matches
+                    ? "instant"
+                    : "smooth",
+                  block: "start",
+                });
+                target?.focus({ preventScroll: true });
+              }}
+            >
+              {w.name} <span>{workoutSets(w)} séries</span>
+            </a>
+          ))}
+        </nav>
+      )}
       {message.includes("mudou em outro lugar") && (
         <div className="button-row">
           <button
@@ -342,7 +392,12 @@ export default function PlanEditor({
         </details>
       )}
       {plan.workouts.map((w, wi) => (
-        <section className="workout-editor" key={w.id}>
+        <section
+          className="workout-editor"
+          key={w.id}
+          id={`ficha-${w.id}`}
+          tabIndex={-1}
+        >
           <div className="editor-workout-title">
             <label>
               Treino

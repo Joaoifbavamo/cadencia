@@ -1,0 +1,339 @@
+/* Shared operational surfaces: clear hierarchy and compact, familiar controls. */
+[hidden] {
+  display: none !important;
+}
+main[data-page] .page-title {
+  margin-bottom: 26px;
+  align-items: flex-start;
+}
+main[data-page] .page-title h1 {
+  font-size: 2rem;
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+}
+.page-description {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+.section-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-bottom: 1px solid var(--line);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.section-tabs [role="tab"] {
+  min-height: 48px;
+  padding: 12px 8px;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  font-weight: 600;
+}
+.section-tabs [aria-selected="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+.settings-health {
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: var(--surface-alt);
+  margin-bottom: 26px;
+  display: grid;
+  gap: 5px;
+}
+.settings-health span {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.settings-health small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+main[data-page="Ajustes"] {
+  max-width: 850px;
+}
+main[data-page="Ajustes"] .settings-section {
+  margin-block: 0 20px;
+  padding-block: 22px;
+  border-top-color: var(--line);
+}
+main[data-page="Ajustes"] .settings-section h2 {
+  font-size: 1.0625rem;
+}
+.settings-disclosure > summary {
+  min-height: 48px;
+}
+.data-inventory {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 24px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 22px;
+}
+.data-inventory div {
+  display: grid;
+  gap: 6px;
+}
+.data-inventory dt {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+.data-inventory dd {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.today-v2 .today-workout {
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 26px;
+  background: var(--surface-alt);
+}
+.upcoming-workout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  border-top: 1px solid var(--line);
+  margin-top: 28px;
+  padding-top: 22px;
+}
+.upcoming-workout h2 {
+  margin-top: 6px;
+  font-size: 1rem;
+}
+.agenda-overview {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+.agenda-overview p {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.agenda-overview b {
+  color: var(--ink);
+}
+.summary-count-note {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.75rem;
+}
+.agenda-overview label {
+  max-width: 220px;
+  font-size: 0.75rem;
+  flex: 1;
+  min-width: 160px;
+}
+.activity-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.activity-presets button {
+  flex: 1 1 100px;
+  min-height: 44px;
+}
+.activity-presets [aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.plan-overview {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  justify-content: space-between;
+  border-block: 1px solid var(--line);
+  padding-block: 14px;
+  margin-bottom: 18px;
+  font-size: 0.875rem;
+}
+.plan-day-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.plan-day-links a {
+  flex: 1 1 140px;
+  display: grid;
+  gap: 3px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.plan-day-links a:hover {
+  background: var(--surface-alt);
+  border-color: var(--line-strong);
+}
+.plan-day-links span {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 450;
+}
+.workout-editor {
+  scroll-margin-top: 24px;
+}
+.exercise-record-summary {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-top: 12px;
+}
+.quick-load {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+.quick-load button {
+  min-height: 44px;
+  padding: 6px 8px;
+  font-size: 0.8125rem;
+}
+.quick-load span {
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-align: center;
+}
+.install-methods {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-block: 24px;
+}
+.install-methods a {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px;
+  text-decoration: none;
+  font-weight: 650;
+  font-size: 0.875rem;
+}
+.install-methods span {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 450;
+}
+.install-methods a:hover {
+  background: var(--surface-alt);
+}
+.install-screen .settings-section {
+  scroll-margin-top: 20px;
+}
+.password-field {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+.password-field input {
+  width: 100%;
+  padding-right: 56px;
+}
+.password-field button {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  width: 44px;
+  border-radius: 9px;
+}
+.password-field button:active {
+  transform: translateY(-50%);
+}
+.import-file input::file-selector-button {
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 12px;
+  margin-right: 12px;
+  background: var(--surface-alt);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+}
+.progress-comparison > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+}
+.progress-comparison > summary::-webkit-details-marker {
+  display: none;
+}
+.progress-comparison > summary h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+.progress-comparison > summary svg {
+  flex-shrink: 0;
+}
+.progress-comparison[open] > summary {
+  margin-bottom: 16px;
+}
+.progress-comparison[open] > summary svg {
+  transform: rotate(180deg);
+}
+.login-form h2 {
+  font-size: 1.75rem;
+  letter-spacing: -0.035em;
+}
+.login-form > p {
+  font-size: 0.875rem;
+}
+@media (max-width: 760px) {
+  main[data-page] .page-title h1 {
+    font-size: 1.75rem;
+  }
+  .today-v2 .today-workout {
+    background: var(--surface);
+    padding: 22px;
+  }
+  .page-description {
+    font-size: 0.8125rem;
+  }
+  .plan-day-links {
+    gap: 8px;
+  }
+  .install-methods {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  main[data-page="Ajustes"] .settings-section {
+    padding-block: 18px;
+  }
+  .upcoming-workout {
+    padding-bottom: 8px;
+  }
+}
+@media (max-width: 400px) {
+  .quick-load {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .quick-load span {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+}

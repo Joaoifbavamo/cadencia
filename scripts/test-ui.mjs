@@ -27,6 +27,7 @@ const suites = webkit
       "progress-navigation.browser.mjs",
       "frontend-integral.browser.mjs",
       "training-insights.browser.mjs",
+      "experience-refresh.browser.mjs",
     ]
   : production
     ? ["pwa.mjs"]
@@ -47,6 +48,7 @@ const suites = webkit
           "progress-navigation.browser.mjs",
           "frontend-integral.browser.mjs",
           "training-insights.browser.mjs",
+          "experience-refresh.browser.mjs",
         ];
 try {
   if (!(await reachable())) {

@@ -69,7 +69,7 @@ Interface operacional para registrar o treino com uma mão, entre séries. Preto
 
 ## Fontes normativas
 
-Tokens comuns em tokens.css. styles.css define a ordem dos módulos base, shell, screens, auth, adaptive e surfaces. Componentes com geometria própria usam guided-workout.css, mobile-navigation.css e progress-history.css. Alterar o módulo responsável em vez de acrescentar correções globais sucessivas.
+Tokens comuns em tokens.css. styles.css define a ordem dos módulos base, shell, screens, auth, adaptive, surfaces e experience. O último reúne superfícies operacionais compartilhadas, cabeçalhos, abas de Ajustes e atalhos. Componentes com geometria própria usam guided-workout.css, mobile-navigation.css e progress-history.css. Alterar o módulo responsável em vez de acrescentar correções globais sucessivas.
 
 ## Estrutura e hierarquia
 
@@ -78,6 +78,8 @@ Desktop usa navegação lateral; celular usa cabeçalho compacto e cinco destino
 Títulos, campos e ações seguem uma hierarquia comum. Títulos longos de treino ocupam a largura disponível; Trocar treino aparece separado no celular. Informações secundárias ficam em seções recolhíveis, mantendo as setas conforme orientação do usuário. Mensagens de erro aparecem na área da ação ou no diálogo ativo.
 
 Agenda privilegia leitura, com Alterar datas recolhível. Evolução compara as últimas sessões compatíveis e pagina as séries em lotes de 20, preservando todo o histórico. O editor informa alterações pendentes e recuperação de rascunho; a confirmação de descarte permanece válida mesmo com retorno rápido durante a navegação.
+
+Ajustes divide Geral, Alertas e Dados com abas acessíveis; painéis ocultos preservam formulários. A barra principal não destaca uma aba quando Ajustes está aberto. Na Evolução, gráfico precede a comparação de sessões, que começa recolhida. Busca não troca o exercício selecionado automaticamente. Agenda inclui resumos mensais preservados após limpeza; atalhos de atividade não preenchem duração. O editor exporta somente fichas válidas e oferece links internos para cada treino.
 
 ## Entrada e ações
 

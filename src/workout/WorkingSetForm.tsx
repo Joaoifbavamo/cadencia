@@ -2,12 +2,14 @@ import { useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { unlockAlarm } from "../alarm.ts";
 import { unitLabel, type Exercise, type Entity } from "../domain.ts";
+import { adjustLoad } from "../experience.ts";
 export default function WorkingSetForm({
   exercise,
   index,
   initial,
   suggested,
   history,
+  increment = 2.5,
   onSave,
 }: {
   exercise: Exercise;
@@ -15,6 +17,7 @@ export default function WorkingSetForm({
   initial?: Entity;
   suggested: string;
   history: boolean;
+  increment?: number;
   onSave: (
     load: string,
     reps: string,
@@ -86,6 +89,31 @@ export default function WorkingSetForm({
             placeholder="—"
           />
         </label>
+      </div>
+      <div
+        className="quick-load"
+        role="group"
+        aria-label="Ajuste rápido de carga"
+      >
+        <button
+          type="button"
+          className="secondary"
+          disabled={busy}
+          aria-label={`Diminuir carga em ${increment} kg`}
+          onClick={() => setLoad((value) => adjustLoad(value, increment, -1))}
+        >
+          − {increment.toLocaleString("pt-BR")} kg
+        </button>
+        <span>Ajustar carga</span>
+        <button
+          type="button"
+          className="secondary"
+          disabled={busy}
+          aria-label={`Aumentar carga em ${increment} kg`}
+          onClick={() => setLoad((value) => adjustLoad(value, increment, 1))}
+        >
+          + {increment.toLocaleString("pt-BR")} kg
+        </button>
       </div>
       <details
         className="guided-rir"

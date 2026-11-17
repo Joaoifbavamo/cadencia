@@ -41,6 +41,7 @@ try {
     await store.advanceCleanup(true);
     store.close();
   });
+  await page.getByRole("tab", { name: "Dados", exact: true }).click();
   await page
     .locator("summary")
     .filter({ hasText: "Gerenciar histórico" })
@@ -50,6 +51,8 @@ try {
   ).toBeDisabled();
   await page.reload();
   await page.getByRole("button", { name: "Conhecer a demonstração" }).click();
+  await page.getByRole("tab", { name: "Dados", exact: true }).click();
+  await page.getByRole("tab", { name: "Dados", exact: true }).click();
   await page
     .locator("summary")
     .filter({ hasText: "Gerenciar histórico" })

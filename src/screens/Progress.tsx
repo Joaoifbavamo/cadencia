@@ -1,3 +1,4 @@
+import { ChevronDown } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Model } from "../model.ts";
 import { todayKey, unitLabel } from "../domain.ts";
@@ -10,6 +11,7 @@ import {
   type Metric,
 } from "../training-insights.ts";
 import TrendChart from "../TrendChart.tsx";
+import { normalizeSearch } from "../experience.ts";
 import "../progress-history.css";
 import { Empty, formatDate } from "../components.tsx";
 export default function Progress({ model }: { model: Model }) {
@@ -18,10 +20,16 @@ export default function Progress({ model }: { model: Model }) {
   const pageSize = 20;
   const [period, setPeriod] = useState("90");
   const [metric, setMetric] = useState<Metric>("load");
+  const [search, setSearch] = useState("");
   const history = useMemo(() => buildHistoryIndex(model.docs), [model.docs]);
   const rows = history.rows;
   const options = [...new Map(rows.map((r) => [r.key, r])).values()];
   const selected = options.find((o) => o.key === choice) || options[0];
+  const filteredOptions = options.filter((o) =>
+    normalizeSearch(`${o.exercise.name} ${o.machine}`).includes(
+      normalizeSearch(search),
+    ),
+  );
   const today = todayKey(new Date(), model.profile?.timezone);
   const cutoff =
     period === "0" ? "0000-01-01" : shiftDate(today, -(Number(period) - 1));
@@ -62,7 +70,12 @@ export default function Progress({ model }: { model: Model }) {
   return (
     <>
       <div className="page-title">
-        <h1>Evolução</h1>
+        <div>
+          <h1>Evolução</h1>
+          <p className="page-description">
+            Consistência que você pode acompanhar.
+          </p>
+        </div>
       </div>
       <label className="insights-period">
         Período
@@ -132,6 +145,15 @@ export default function Progress({ model }: { model: Model }) {
         <>
           <div className="progress-filters">
             <label>
+              Buscar exercício
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Ex.: supino, tríceps…"
+              />
+            </label>
+            <label>
               Exercício e faixa
               <select
                 value={selected?.key}
@@ -140,7 +162,11 @@ export default function Progress({ model }: { model: Model }) {
                   setPage(0);
                 }}
               >
-                {options.map((o) => (
+                {(!filteredOptions.some((o) => o.key === selected?.key) &&
+                selected
+                  ? [selected, ...filteredOptions]
+                  : filteredOptions
+                ).map((o) => (
                   <option key={o.key} value={o.key}>
                     {o.exercise.name} · {o.exercise.min}–{o.exercise.max} reps
                     {o.machine ? " · " + o.machine : ""}
@@ -148,51 +174,19 @@ export default function Progress({ model }: { model: Model }) {
                 ))}
               </select>
             </label>
-          </div>
-          <section
-            className="progress-comparison"
-            aria-label="Comparação de sessões"
-          >
-            <h2>Últimas sessões comparáveis</h2>
-            <p className="fine">
-              Mesmo exercício, faixa, unidade e aparelho · histórico completo,
-              independente do período do gráfico.
-            </p>
-            <div className="progress-comparison-sessions">
-              {comparison.map((group, index) => (
-                <div key={group.sessionId}>
-                  <h3>
-                    {index === 0 ? "Mais recente" : "Anterior"} ·{" "}
-                    {formatDate(group.session.actualDate)}
-                  </h3>
-                  {!group.session.finishedAt && (
-                    <p className="fine">Treino em andamento</p>
-                  )}
-                  <p>
-                    {group.sets.length}{" "}
-                    {group.sets.length === 1
-                      ? "série registrada"
-                      : "séries registradas"}{" "}
-                    · {group.sets.reduce((sum, set) => sum + set.reps, 0)} reps
-                    no total
-                  </p>
-                  <ol>
-                    {group.sets.map((set) => (
-                      <li key={set.id} value={set.index + 1}>
-                        {set.load} kg × {set.reps} reps · RIR {set.rir ?? "—"}
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              ))}
-            </div>
-            {comparison.length < 2 && (
-              <p className="muted">
-                Uma segunda sessão comparável permitirá conferir as séries lado
-                a lado.
+            {search && (
+              <p className="fine" role="status">
+                {filteredOptions.length} variações encontradas. A seleção atual
+                é mantida até você escolher outra.
               </p>
             )}
-          </section>
+          </div>
+          <p className="exercise-record-summary">
+            {new Set(completed.map((r) => r.sessionId)).size} treinos concluídos
+            · {completed.length} séries ·{" "}
+            {completed.reduce((sum, r) => sum + r.reps, 0)} repetições neste
+            período
+          </p>
           <section className="chart-panel">
             <h2>{metricLabel}</h2>
             <div
@@ -255,6 +249,53 @@ export default function Progress({ model }: { model: Model }) {
               </p>
             )}
           </section>
+          <details
+            className="progress-comparison"
+            aria-label="Comparação de sessões"
+          >
+            <summary>
+              <h2>Últimas sessões comparáveis</h2>
+              <ChevronDown size={18} aria-hidden="true" />
+            </summary>
+            <p className="fine">
+              Mesmo exercício, faixa, unidade e aparelho · histórico completo,
+              independente do período do gráfico.
+            </p>
+            <div className="progress-comparison-sessions">
+              {comparison.map((group, index) => (
+                <div key={group.sessionId}>
+                  <h3>
+                    {index === 0 ? "Mais recente" : "Anterior"} ·{" "}
+                    {formatDate(group.session.actualDate)}
+                  </h3>
+                  {!group.session.finishedAt && (
+                    <p className="fine">Treino em andamento</p>
+                  )}
+                  <p>
+                    {group.sets.length}{" "}
+                    {group.sets.length === 1
+                      ? "série registrada"
+                      : "séries registradas"}{" "}
+                    · {group.sets.reduce((sum, set) => sum + set.reps, 0)} reps
+                    no total
+                  </p>
+                  <ol>
+                    {group.sets.map((set) => (
+                      <li key={set.id} value={set.index + 1}>
+                        {set.load} kg × {set.reps} reps · RIR {set.rir ?? "—"}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              ))}
+            </div>
+            {comparison.length < 2 && (
+              <p className="muted">
+                Uma segunda sessão comparável permitirá conferir as séries lado
+                a lado.
+              </p>
+            )}
+          </details>
           <div className="insights-history-title">
             <h2>Histórico de séries</h2>
             <button

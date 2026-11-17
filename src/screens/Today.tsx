@@ -12,6 +12,7 @@ import {
   findResumableSession,
 } from "../domain.ts";
 import { formatDate, Sheet } from "../components.tsx";
+import { nextWorkout, workoutSets } from "../experience.ts";
 export default function Today({
   model,
   onStart,
@@ -29,6 +30,7 @@ export default function Today({
   const date = todayKey(new Date(), model.profile.timezone);
   const plan = visible(model.docs, "plan")[0]?.payload as Plan | undefined;
   const scheduled = plannedWorkout(plan, date);
+  const upcoming = nextWorkout(plan, date);
   const recovery = plan?.recovery?.find(
     (r) => r.day === new Date(date + "T12:00:00Z").getUTCDay(),
   );
@@ -156,7 +158,11 @@ export default function Today({
               Trocar treino <ChevronDown size={16} />
             </button>
           </div>
-          <p>{selected.exercises.length} exercícios</p>
+          <p>
+            {selected.exercises.length} exercícios{" "}
+            <span aria-hidden="true">·</span> {workoutSets(selected)} séries
+            válidas
+          </p>
           <button
             className="primary start-workout"
             onClick={() => onStart(selected, date, plannedDate)}
@@ -314,6 +320,22 @@ export default function Today({
           </details>
           <button className="text-button" onClick={onPlan}>
             Editar minha ficha <ArrowRight size={16} />
+          </button>
+        </section>
+      )}
+      {upcoming && (
+        <section
+          className="upcoming-workout"
+          aria-label="Próximo treino previsto"
+        >
+          <div>
+            <p className="fine">
+              Próximo na ficha · {formatDate(upcoming.date)}
+            </p>
+            <h2>{upcoming.workout.name}</h2>
+          </div>
+          <button className="text-button" onClick={onAgenda}>
+            Ver na Agenda <ArrowRight size={16} />
           </button>
         </section>
       )}

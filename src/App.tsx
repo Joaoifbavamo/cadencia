@@ -23,6 +23,8 @@ import {
   Check,
   WifiOff,
   Download,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { supabase } from "./auth.ts";
 import { LocalStore } from "./storage.ts";
@@ -647,7 +649,7 @@ export default function App() {
           </div>
         )}
         <UpdateNotice defer={Boolean(sessionId) || tab === "Meu treino"} />
-        <main>
+        <main data-page={sessionId ? "Treino" : tab}>
           {sessionId ? (
             <Workout
               model={model}
@@ -791,6 +793,7 @@ function Login({ onDemo }: { onDemo: () => void }) {
   const [busy, setBusy] = useState(false);
   const [reset, setReset] = useState(false);
   const [installing, setInstalling] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   if (installing)
     return (
       <div className="public-install">
@@ -886,13 +889,24 @@ function Login({ onDemo }: { onDemo: () => void }) {
           {!reset && (
             <label>
               Senha
-              <input
-                type="password"
-                name="password"
-                required
-                autoComplete="current-password"
-                placeholder="Sua senha"
-              />
+              <span className="password-field">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  aria-label="Senha"
+                  name="password"
+                  required
+                  autoComplete="current-password"
+                  placeholder="Sua senha"
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((value) => !value)}
+                >
+                  {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                </button>
+              </span>
             </label>
           )}
           <button className="primary" disabled={busy}>
@@ -913,6 +927,7 @@ function Login({ onDemo }: { onDemo: () => void }) {
           className="text-button"
           onClick={() => {
             setReset(!reset);
+            setShowPassword(false);
             setError("");
           }}
         >

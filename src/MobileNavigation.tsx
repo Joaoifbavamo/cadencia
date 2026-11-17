@@ -65,7 +65,11 @@ function Navigation({ items, value, onChange }: Props) {
       }}
     >
       <div className="nav-track">
-        <span className="nav-indicator" aria-hidden="true" />
+        <span
+          className="nav-indicator"
+          style={{ opacity: items.some((n) => n.name === selected) ? 1 : 0 }}
+          aria-hidden="true"
+        />
         {items.map((n, i) => (
           <button
             key={n.name}

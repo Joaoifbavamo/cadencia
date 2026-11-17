@@ -12,7 +12,12 @@ export default function Install() {
   return (
     <div className="install-screen">
       <div className="page-title">
-        <h1>Instalar no iPhone</h1>
+        <div>
+          <h1>Instalar no iPhone</h1>
+          <p className="page-description">
+            Seu diário a um toque de distância.
+          </p>
+        </div>
       </div>
       <section className="install-intro">
         <div className="install-app-icon">
@@ -31,7 +36,32 @@ export default function Install() {
           )}
         </div>
       </section>
-      <section className="settings-section">
+      <div className="install-methods" aria-label="Formas de instalação">
+        <a
+          href="#install-safari"
+          onClick={(event) => {
+            event.preventDefault();
+            document
+              .getElementById("install-safari")
+              ?.scrollIntoView({ block: "start" });
+          }}
+        >
+          Pela Tela de Início{" "}
+          <span>Para usar como app e ativar os alertas</span>
+        </a>
+        <a
+          href="#install-profile"
+          onClick={(event) => {
+            event.preventDefault();
+            document
+              .getElementById("install-profile")
+              ?.scrollIntoView({ block: "start" });
+          }}
+        >
+          Por perfil <span>Baixar um atalho de configuração</span>
+        </a>
+      </div>
+      <section className="settings-section" id="install-profile">
         <h2>Perfil de configuração</h2>
         {!environment.ios && (
           <p className="install-browser-note">
@@ -105,7 +135,7 @@ export default function Install() {
           gerenciamento remoto ou conta.
         </p>
       </section>
-      <section className="settings-section">
+      <section className="settings-section" id="install-safari">
         <h2>Instalação pelo Safari</h2>
         <p>
           Esta é também a instalação documentada pela Apple para receber Web
@@ -131,8 +161,8 @@ export default function Install() {
               <Smartphone size={17} /> Abra pelo ícone Cadência
             </b>
             <span>
-              Entre na sua conta. Em Ajustes → Notificações, ative os alertas
-              deste aparelho.
+              Entre na sua conta. Em Ajustes → Alertas, ative os alertas deste
+              aparelho.
             </span>
           </li>
         </ol>

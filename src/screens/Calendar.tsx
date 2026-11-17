@@ -5,6 +5,7 @@ import type { Model } from "../model.ts";
 import {
   visible,
   todayKey,
+  dateValid,
   plannedWorkout,
   uid,
   type Plan,
@@ -12,6 +13,7 @@ import {
   type Entity,
 } from "../domain.ts";
 import { Sheet, formatDate } from "../components.tsx";
+import { monthlyTrainingCount } from "../experience.ts";
 export default function Calendar({
   model,
   onStart,
@@ -22,14 +24,18 @@ export default function Calendar({
   onOpen: (id: string) => void;
 }) {
   const removal = usePausedRemoval(model);
-  const [date, setDate] = useState(todayKey());
+  const [date, setDate] = useState(
+    todayKey(new Date(), model.profile.timezone),
+  );
   const [month, setMonth] = useState(date.slice(0, 7));
   const [activity, setActivity] = useState(false);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<Entity>();
   const [savingActivity, setSavingActivity] = useState(false);
+  const [activityName, setActivityName] = useState("");
   const openActivity = (item?: Entity) => {
     setEditing(item);
+    setActivityName(item?.payload.name ?? "");
     setError("");
     setActivity(true);
   };
@@ -62,6 +68,7 @@ export default function Calendar({
   ).getDate();
   const sessions = visible(model.docs, "session");
   const activities = visible(model.docs, "activity");
+  const monthCount = monthlyTrainingCount(model.docs, month);
   const selectDate = (next: string) => {
     setDate(next);
     setPlanned(
@@ -79,7 +86,10 @@ export default function Calendar({
   return (
     <>
       <div className="page-title">
-        <h1>Agenda</h1>
+        <div>
+          <h1>Agenda</h1>
+          <p className="page-description">Seu treino cabe na sua semana.</p>
+        </div>
         <button
           className="secondary"
           onClick={() => {
@@ -89,6 +99,29 @@ export default function Calendar({
         >
           Hoje
         </button>
+      </div>
+      <div className="agenda-overview">
+        <p>
+          <b>{monthCount.total}</b> treinos concluídos no mês
+          {monthCount.summarized > 0 && (
+            <small className="summary-count-note">
+              Inclui {monthCount.summarized} treinos preservados em resumos.
+            </small>
+          )}
+        </p>
+        <label>
+          Ir para uma data
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => {
+              if (dateValid(e.target.value)) {
+                selectDate(e.target.value);
+                setMonth(e.target.value.slice(0, 7));
+              }
+            }}
+          />
+        </label>
       </div>
       <div className="calendar-panel">
         <div className="month-title">
@@ -367,11 +400,31 @@ export default function Calendar({
               }
             }}
           >
+            {!editing && (
+              <div
+                className="activity-presets"
+                role="group"
+                aria-label="Atalhos de atividade"
+              >
+                {["Cardio", "Abdômen", "Caminhada", "Bicicleta"].map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    className="secondary"
+                    aria-pressed={activityName === name}
+                    onClick={() => setActivityName(name)}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            )}
             <label>
               Atividade
               <input
                 name="name"
-                defaultValue={editing?.payload.name ?? ""}
+                value={activityName}
+                onChange={(e) => setActivityName(e.target.value)}
                 required
                 placeholder="Caminhada, bicicleta…"
               />

@@ -104,6 +104,10 @@ try {
       for (const d of await p.locator("main details").all())
         await d.evaluate((e) => (e.open = true));
       await scan("settings-open");
+      await p.getByRole("tab", { name: "Alertas", exact: true }).click();
+      await scan("settings-alerts");
+      await p.getByRole("tab", { name: "Dados", exact: true }).click();
+      await scan("settings-data");
     }
     await p.setViewportSize({ width: 1440, height: 1000 });
     await p.screenshot({
