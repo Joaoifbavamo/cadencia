@@ -30,6 +30,9 @@ export default function Today({
   const date = todayKey(new Date(), model.profile.timezone);
   const plan = visible(model.docs, "plan")[0]?.payload as Plan | undefined;
   const scheduled = plannedWorkout(plan, date);
+  const recovery = plan?.recovery?.find(
+    (r) => r.day === new Date(date + "T12:00:00Z").getUTCDay(),
+  );
   const [choose, setChoose] = useState(false);
   const profileDoc = visible(model.docs, "profile")[0];
   const choice =
@@ -167,11 +170,16 @@ export default function Today({
         </section>
       ) : (
         <section className="today-workout rest-day">
-          <h2>{plan ? "Hoje é dia livre." : "Vamos preparar sua ficha."}</h2>
+          <h2>
+            {recovery?.name ??
+              (plan ? "Hoje é dia livre." : "Vamos preparar sua ficha.")}
+          </h2>
           <p>
-            {plan
-              ? "Pode descansar, registrar cardio ou fazer um treino em outro dia."
-              : "Importe a ficha pessoal em Ajustes ou monte o treino no editor."}
+            {recovery
+              ? recovery.notes
+              : plan
+                ? "Pode descansar, registrar cardio ou fazer um treino em outro dia."
+                : "Importe a ficha pessoal em Ajustes ou monte o treino no editor."}
           </p>
           <button
             className="primary start-workout"
@@ -299,8 +307,9 @@ export default function Today({
                 ),
               )}
               <p className="time-note">
-                Reserve até 45 min, incluindo aquecimento. O tempo real depende
-                das pausas e da academia.
+                O tempo inclui aquecimento, séries e descansos. Respeite as
+                pausas da ficha; a duração varia com a academia e sua
+                preparação.
               </p>
             </div>
           </details>

@@ -40,6 +40,9 @@ export default function Calendar({
   );
   const [workoutId, setWorkoutId] = useState("");
   const plan = visible(model.docs, "plan")[0]?.payload as Plan | undefined;
+  const recovery = plan?.recovery?.find(
+    (r) => r.day === new Date(date + "T12:00:00Z").getUTCDay(),
+  );
   const chosenForDate = plan?.workouts.find(
     (w) =>
       model.profile.todayChoice?.date === date &&
@@ -285,6 +288,12 @@ export default function Calendar({
               </button>
             </div>
           ))}
+        {recovery && (
+          <div className="recovery-guidance">
+            <h3>{recovery.name}</h3>
+            <p>{recovery.notes}</p>
+          </div>
+        )}
         {selected && (
           <div className="schedule-form">
             <label>

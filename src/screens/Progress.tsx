@@ -1,7 +1,15 @@
 import { useMemo, useState } from "react";
 import type { Model } from "../model.ts";
-import { unitLabel } from "../domain.ts";
-import { buildHistoryIndex, dailyLoads } from "../history-index.ts";
+import { todayKey, unitLabel } from "../domain.ts";
+import { buildHistoryIndex } from "../history-index.ts";
+import {
+  exercisePoints,
+  seriesCsv,
+  shiftDate,
+  trainingSummary,
+  type Metric,
+} from "../training-insights.ts";
+import TrendChart from "../TrendChart.tsx";
 import "../progress-history.css";
 import { Empty, formatDate } from "../components.tsx";
 export default function Progress({ model }: { model: Model }) {
@@ -9,20 +17,25 @@ export default function Progress({ model }: { model: Model }) {
   const [page, setPage] = useState(0);
   const pageSize = 20;
   const [period, setPeriod] = useState("90");
+  const [metric, setMetric] = useState<Metric>("load");
   const history = useMemo(() => buildHistoryIndex(model.docs), [model.docs]);
   const rows = history.rows;
   const options = [...new Map(rows.map((r) => [r.key, r])).values()];
   const selected = options.find((o) => o.key === choice) || options[0];
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - Number(period));
+  const today = todayKey(new Date(), model.profile?.timezone);
+  const cutoff =
+    period === "0" ? "0000-01-01" : shiftDate(today, -(Number(period) - 1));
+  const summary = useMemo(
+    () => trainingSummary(model.docs, cutoff, today),
+    [model.docs, cutoff, today],
+  );
   const data = rows
     .filter(
-      (r) =>
-        r.key === selected?.key &&
-        (period === "0" || r.date >= cutoff.toISOString().slice(0, 10)),
+      (r) => r.key === selected?.key && r.date >= cutoff && r.date <= today,
     )
     .sort((a, b) => a.date.localeCompare(b.date) || a.index - b.index);
-  const points = dailyLoads(data);
+  const completed = data.filter((r) => summary.completedIds.has(r.sessionId));
+  const points = exercisePoints(completed, metric);
   const pageIndex = Math.min(
     page,
     Math.max(0, Math.ceil(data.length / pageSize) - 1),
@@ -33,16 +46,83 @@ export default function Progress({ model }: { model: Model }) {
     (pageIndex + 1) * pageSize,
   );
   const comparison = selected
-    ? (history.byComparison.get(selected.key)?.slice(0, 2) ?? [])
+    ? (history.byComparison
+        .get(selected.key)
+        ?.filter((g) => g.session.finishedAt && g.session.actualDate <= today)
+        .slice(0, 2) ?? [])
     : [];
-  const max = Math.max(...points.map((p) => p.load), 1),
-    min = Math.min(...points.map((p) => p.load), max);
-  const y = (v: number) => 170 - ((v - min) / (max - min || 1)) * 130;
+  const metricLabel = {
+    load: "Carga registrada",
+    reps: "Repetições registradas",
+    volume: "Volume registrado",
+  }[metric];
+  const best = [...completed].sort(
+    (a, b) => b.load - a.load || b.reps - a.reps,
+  )[0];
   return (
     <>
       <div className="page-title">
         <h1>Evolução</h1>
       </div>
+      <label className="insights-period">
+        Período
+        <select
+          value={period}
+          onChange={(e) => {
+            setPeriod(e.target.value);
+            setPage(0);
+          }}
+        >
+          <option value="30">30 dias</option>
+          <option value="90">90 dias</option>
+          <option value="365">1 ano</option>
+          <option value="0">Todo histórico</option>
+        </select>
+      </label>
+      <dl className="insights-summary" aria-label="Resumo do período">
+        <div>
+          <dt>Treinos concluídos</dt>
+          <dd>{summary.workouts}</dd>
+        </div>
+        <div>
+          <dt>Dias de treino</dt>
+          <dd>{summary.days}</dd>
+        </div>
+        <div>
+          <dt>Séries válidas registradas</dt>
+          <dd>{summary.sets}</dd>
+        </div>
+        <div>
+          <dt>Atividades extras</dt>
+          <dd>
+            {summary.minutes}
+            <small> min</small>
+          </dd>
+        </div>
+      </dl>
+      <section className="attendance-panel" aria-label="Frequência semanal">
+        <h2>Seu ritmo de treino</h2>
+        <p className="fine">
+          Treinos concluídos por semana · últimas 8 semanas dentro do período.
+        </p>
+        <div className="attendance-bars">
+          {summary.weeks.map((w) => (
+            <div key={w.date}>
+              <span>{w.value}</span>
+              <div className="attendance-track">
+                <i
+                  style={{
+                    height: `${(w.value / Math.max(1, ...summary.weeks.map((x) => x.value))) * 100}%`,
+                  }}
+                />
+              </div>
+              <time dateTime={w.date}>
+                {w.date.slice(8, 10)}/{w.date.slice(5, 7)}
+              </time>
+            </div>
+          ))}
+        </div>
+      </section>
       {!options.length ? (
         <Empty title="Toda evolução começa num registro.">
           Suas cargas aparecerão aqui depois das primeiras séries. Nenhum
@@ -66,21 +146,6 @@ export default function Progress({ model }: { model: Model }) {
                     {o.machine ? " · " + o.machine : ""}
                   </option>
                 ))}
-              </select>
-            </label>
-            <label>
-              Período
-              <select
-                value={period}
-                onChange={(e) => {
-                  setPeriod(e.target.value);
-                  setPage(0);
-                }}
-              >
-                <option value="30">30 dias</option>
-                <option value="90">90 dias</option>
-                <option value="365">1 ano</option>
-                <option value="0">Todo histórico</option>
               </select>
             </label>
           </div>
@@ -129,65 +194,92 @@ export default function Progress({ model }: { model: Model }) {
             )}
           </section>
           <section className="chart-panel">
-            <h2>Carga registrada</h2>
-            <p className="muted">
-              Maior carga de cada dia · {unitLabel(selected.exercise.unit)}
-            </p>
-            {points.length ? (
-              <svg
-                className="chart"
-                viewBox="0 0 560 210"
-                role="img"
-                aria-label={`Histórico de carga: ${points.map((p) => `${formatDate(p.date)}, ${p.load} kg`).join("; ")}`}
-              >
-                <line x1="30" y1="175" x2="535" y2="175" stroke="var(--line)" />
-                <polyline
-                  fill="none"
-                  stroke="var(--ink)"
-                  strokeWidth="3"
-                  strokeLinejoin="round"
-                  points={points
-                    .map(
-                      (p, i) =>
-                        `${40 + (i * 480) / Math.max(1, points.length - 1)},${y(p.load)}`,
-                    )
-                    .join(" ")}
-                />
-                {points.map((p, i) => (
-                  <g key={p.date}>
-                    <circle
-                      cx={40 + (i * 480) / Math.max(1, points.length - 1)}
-                      cy={y(p.load)}
-                      r="5"
-                      fill="var(--ink)"
-                    />
-                    <title>
-                      {p.date}: {p.load} kg
-                    </title>
-                  </g>
-                ))}
-                <text x="30" y="202" fontSize="12" fill="var(--muted)">
-                  {formatDate(points[0].date)}
-                </text>
-                <text
-                  x="535"
-                  y="202"
-                  textAnchor="end"
-                  fontSize="12"
-                  fill="var(--muted)"
+            <h2>{metricLabel}</h2>
+            <div
+              className="metric-switch"
+              role="group"
+              aria-label="Métrica do gráfico"
+            >
+              {(
+                [
+                  ["load", "Carga"],
+                  ["reps", "Repetições"],
+                  ["volume", "Volume"],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  className="secondary"
+                  aria-pressed={metric === value}
+                  onClick={() => setMetric(value)}
                 >
-                  {formatDate(points.at(-1)!.date)}
-                </text>
-              </svg>
-            ) : (
-              <p>Nenhum registro nesse período.</p>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="muted">
+              {metric === "load"
+                ? "Maior carga de cada dia"
+                : metric === "reps"
+                  ? "Soma das repetições do dia"
+                  : "Soma de carga × repetições do dia"}{" "}
+              · treinos concluídos · {unitLabel(selected.exercise.unit)}
+            </p>
+            <TrendChart
+              key={`${selected.key}-${period}-${metric}`}
+              points={points}
+              label={metricLabel}
+              unit={
+                metric === "reps"
+                  ? "reps"
+                  : metric === "volume"
+                    ? "kg·reps"
+                    : "kg"
+              }
+            />
+            {best && (
+              <p className="insights-best">
+                <b>Maior carga no período:</b> {best.load} kg × {best.reps} reps
+                · RIR {best.rir ?? "não informado"} · {formatDate(best.date)}
+              </p>
             )}
             <p className="fine">
               Carga maior com menos repetições ou RIR diferente não comprova
               melhora. Compare também execução, amplitude e aparelho.
             </p>
+            {metric === "volume" && (
+              <p className="fine">
+                Volume usa a carga como você registrou, sem duplicar halteres.
+                Mais séries também aumentam esse número; ele não mede
+                hipertrofia. Não compare aparelhos ou exercícios diferentes.
+              </p>
+            )}
           </section>
-          <h2>Histórico de séries</h2>
+          <div className="insights-history-title">
+            <h2>Histórico de séries</h2>
+            <button
+              className="secondary"
+              disabled={!data.length}
+              onClick={() => {
+                const url = URL.createObjectURL(
+                  new Blob([seriesCsv(data)], {
+                    type: "text/csv;charset=utf-8;",
+                  }),
+                );
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `cadencia-series-${today}.csv`;
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+              }}
+            >
+              Exportar CSV
+            </button>
+          </div>
+          <p className="fine">
+            Inclui séries de sessões em andamento. Gráficos e resumo consideram
+            somente treinos concluídos. Exportação segue os filtros acima.
+          </p>
           <div className="table-scroll">
             <table>
               <thead>
@@ -202,7 +294,12 @@ export default function Progress({ model }: { model: Model }) {
               <tbody>
                 {pageRows.map((r) => (
                   <tr key={r.id}>
-                    <td>{formatDate(r.date)}</td>
+                    <td>
+                      {formatDate(r.date)}
+                      {!history.sessions.get(r.sessionId)?.finishedAt && (
+                        <small className="series-draft">Em andamento</small>
+                      )}
+                    </td>
                     <td>{r.index + 1}</td>
                     <td>{r.load} kg</td>
                     <td>{r.reps}</td>

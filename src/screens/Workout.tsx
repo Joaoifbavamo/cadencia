@@ -12,7 +12,6 @@ import { motion, useReducedMotion } from "motion/react";
 import type { Model } from "../model.ts";
 import {
   visible,
-  latestSet,
   validateSet,
   setIdentity,
   type Entity,
@@ -36,6 +35,7 @@ import "../guided-workout.css";
 import WarmupStage from "../workout/WarmupStage.tsx";
 import WorkingSetForm from "../workout/WorkingSetForm.tsx";
 import RestStage from "../workout/RestStage.tsx";
+import { previousPerformance } from "../training-insights.ts";
 type GuidedSession = Session & { warmupDone?: string[] };
 export default function Workout({
   model,
@@ -123,10 +123,12 @@ function GuidedWorkout({
         .sort((a, b) => a.payload.index - b.payload.index),
     [sets, exercise?.id],
   );
-  const reference = useMemo(
-    () => (exercise ? latestSet(model.docs, exercise, session.id) : undefined),
-    [model.docs, exercise, session.id],
+  const previous = useMemo(
+    () =>
+      exercise ? previousPerformance(model.docs, exercise, session) : undefined,
+    [model.docs, exercise, session],
   );
+  const reference = previous?.sets[0];
   const [editing, setEditing] = useState<number | null>(null);
   const active =
     editing ??
@@ -488,22 +490,69 @@ function GuidedWorkout({
                   {editing !== null ? "Corrigir série" : "Série"} {active + 1}{" "}
                   de {exercise.sets}
                 </h2>
+                {previous ? (
+                  <aside
+                    className="set-comparison"
+                    aria-label="Referência da série"
+                  >
+                    <p>
+                      {previous.source === "previous-week"
+                        ? "Semana passada"
+                        : "Último treino comparável"}{" "}
+                      · {formatDate(previous.session.actualDate)}
+                    </p>
+                    {previous.sets.find((s) => s.index === active) ? (
+                      (() => {
+                        const prior = previous.sets.find(
+                          (s) => s.index === active,
+                        )!;
+                        return (
+                          <strong>
+                            Série {active + 1}: {prior.load} kg × {prior.reps}{" "}
+                            reps
+                            {prior.rir !== null ? ` · RIR ${prior.rir}` : ""}
+                          </strong>
+                        );
+                      })()
+                    ) : (
+                      <strong>Série {active + 1} sem registro anterior.</strong>
+                    )}
+                    <details>
+                      <summary>Ver todas as séries anteriores</summary>
+                      <ol>
+                        {previous.sets.map((s) => (
+                          <li key={s.id} value={s.index + 1}>
+                            {s.load} kg × {s.reps} reps · RIR {s.rir ?? "—"}
+                          </li>
+                        ))}
+                      </ol>
+                    </details>
+                  </aside>
+                ) : (
+                  <p className="fine">
+                    Sem treino concluído comparável. Registre hoje para comparar
+                    na próxima vez.
+                  </p>
+                )}
                 <WorkingSetForm
                   key={exercise.id + "-" + active + "-" + (editing !== null)}
                   exercise={exercise}
                   index={active}
                   initial={recorded.find((d) => d.payload.index === active)}
-                  suggested={target || String(reference?.load ?? "")}
+                  suggested={
+                    target && target !== String(reference?.load ?? "")
+                      ? target
+                      : String(
+                          previous?.sets.find((s) => s.index === active)
+                            ?.load ??
+                            reference?.load ??
+                            "",
+                        )
+                  }
                   history={history || editing !== null}
                   onSave={saveSet}
                 />
               </>
-            )}
-            {reference && (
-              <p className="guided-reference">
-                Última sessão comparável: {reference.load} kg × {reference.reps}{" "}
-                reps{reference.rir !== null ? ` · RIR ${reference.rir}` : ""}.
-              </p>
             )}
             <div className="guided-secondary">
               <button

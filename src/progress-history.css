@@ -5,6 +5,183 @@
   border-radius: 20px;
   min-width: 0;
 }
+.insights-period {
+  display: grid;
+  gap: 8px;
+  max-width: 240px;
+  margin: 0 0 24px;
+}
+.insights-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+  padding: 0 0 24px;
+  margin: 0;
+  border-bottom: 1px solid var(--line);
+}
+.insights-summary div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 6px;
+}
+.insights-summary dt {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.insights-summary dd {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.insights-summary small {
+  font-size: 0.875rem;
+  font-weight: 450;
+}
+.attendance-panel {
+  padding-block: 24px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 24px;
+}
+.attendance-panel h2 {
+  margin-top: 0;
+}
+.attendance-bars {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+.attendance-bars > div {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+.attendance-bars time {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+.attendance-track {
+  height: 80px;
+  width: min(100%, 36px);
+  display: flex;
+  align-items: end;
+  border-bottom: 1px solid var(--line);
+}
+.attendance-track i {
+  display: block;
+  width: 100%;
+  background: var(--ink);
+  border-radius: 5px 5px 0 0;
+}
+.metric-switch {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-block: 16px;
+}
+.metric-switch button {
+  min-height: 44px;
+  flex: 1;
+  padding-inline: 10px;
+}
+.metric-switch button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.insights-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: none;
+}
+.chart-explore {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  margin-block: 12px 20px;
+}
+.chart-explore button {
+  min-height: 44px;
+  padding-inline: 12px;
+}
+.chart-explore output {
+  display: grid;
+  text-align: center;
+  font-size: 0.8125rem;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.chart-explore strong {
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+.insights-best {
+  padding-block: 16px;
+  border-block: 1px solid var(--line);
+  font-size: 0.875rem;
+  line-height: 1.65;
+}
+.insights-history-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 28px;
+}
+.insights-history-title h2 {
+  margin: 0;
+}
+.series-draft {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.recovery-guidance {
+  margin-block: 20px;
+  line-height: 1.7;
+}
+.recovery-editor {
+  display: grid;
+  gap: 16px;
+  padding-block: 20px;
+}
+.recovery-editor textarea {
+  min-height: 130px;
+  width: 100%;
+}
+@media (max-width: 600px) {
+  .insights-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 16px;
+  }
+  .attendance-bars {
+    gap: 6px;
+  }
+  .chart-explore button {
+    padding-inline: 9px;
+    font-size: 0.8125rem;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .chart-explore {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .chart-explore output {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    margin-bottom: 4px;
+  }
+}
 .progress-comparison h2 {
   margin-top: 0;
 }

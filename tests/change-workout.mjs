@@ -16,6 +16,9 @@ try {
       .click();
   await p.goto(process.env.REVIEW_BASE_URL || "http://127.0.0.1:5177");
   await p.getByRole("button", { name: "Conhecer a demonstração" }).click();
+  await expect(
+    p.getByRole("heading", { name: "Treino de hoje", exact: true }),
+  ).toBeVisible();
   await p.evaluate(async () => {
     const { LocalStore } = await import("/src/storage.ts");
     const s = await new LocalStore("demo").open();

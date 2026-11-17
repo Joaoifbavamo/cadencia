@@ -13,7 +13,7 @@ João, 18 anos, quatro anos de treino; usa iPhone entre séries e computador par
 Registrar cada série rapidamente, retomar sessões e ver os mesmos dados nos aparelhos, com privacidade.
 
 ## Operating Context
-Academia, pausas curtas, uma mão e possível conexão instável. Ficha de quatro dias com sessão até 45 minutos.
+Academia, pausas curtas, uma mão e possível conexão instável. Ficha privada de três dias (superior, inferior e corpo inteiro complementar), com dois dias de cardio e abdômen. Duração flexível, sem cortar os descansos para caber em um limite fixo.
 
 ## Capabilities and Constraints
 Hoje, Agenda, Evolução, Meu treino; RIR opcional; calendário flexível; plano editável; cache e sincronização; acesso único autorizado; PWA no iPhone.

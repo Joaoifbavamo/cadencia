@@ -283,6 +283,64 @@ export default function PlanEditor({
           }
         />
       </label>
+      {!!plan.recovery?.length && (
+        <details className="workout-editor">
+          <summary>Cardio e abdômen nos dias livres</summary>
+          {plan.recovery.map((r, ri) => (
+            <div key={ri} className="recovery-editor">
+              <label>
+                Dia
+                <select
+                  value={r.day}
+                  onChange={(e) =>
+                    change((p) => {
+                      p.recovery![ri].day = Number(e.target.value);
+                    })
+                  }
+                >
+                  {[
+                    "Domingo",
+                    "Segunda",
+                    "Terça",
+                    "Quarta",
+                    "Quinta",
+                    "Sexta",
+                    "Sábado",
+                  ].map((d, i) => (
+                    <option key={i} value={i}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Atividade
+                <input
+                  value={r.name}
+                  maxLength={200}
+                  onChange={(e) =>
+                    change((p) => {
+                      p.recovery![ri].name = e.target.value;
+                    })
+                  }
+                />
+              </label>
+              <label>
+                Orientações
+                <textarea
+                  value={r.notes}
+                  maxLength={4000}
+                  onChange={(e) =>
+                    change((p) => {
+                      p.recovery![ri].notes = e.target.value;
+                    })
+                  }
+                />
+              </label>
+            </div>
+          ))}
+        </details>
+      )}
       {plan.workouts.map((w, wi) => (
         <section className="workout-editor" key={w.id}>
           <div className="editor-workout-title">
@@ -414,6 +472,7 @@ export default function PlanEditor({
                       }
                     >
                       <option value="main">3 aproximações</option>
+                      <option value="bridge">2 aproximações</option>
                       <option value="secondary">1 aproximação leve</option>
                       <option value="none">Sem sugestão automática</option>
                     </select>

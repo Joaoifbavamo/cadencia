@@ -415,3 +415,34 @@
   outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
+.set-comparison {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  min-width: 0;
+}
+.set-comparison p {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin: 0 0 6px;
+}
+.set-comparison strong {
+  display: block;
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.set-comparison summary {
+  min-height: 44px;
+  display: list-item;
+  align-content: center;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+.set-comparison ol {
+  font-size: 0.875rem;
+  padding-left: 20px;
+  line-height: 1.8;
+  margin: 0;
+}

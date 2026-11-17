@@ -1,5 +1,5 @@
 export type Unit = "bar" | "dumbbell" | "machine" | "body";
-export type Warm = "main" | "secondary" | "none";
+export type Warm = "main" | "bridge" | "secondary" | "none";
 export interface Exercise {
   id: string;
   name: string;
@@ -25,6 +25,7 @@ export interface Plan {
   id: string;
   name: string;
   workouts: Workout[];
+  recovery?: { day: number; name: string; notes: string }[];
 }
 export interface Session {
   id: string;
@@ -149,7 +150,12 @@ export function warmup(
           [0.7, 5],
           [0.875, 2],
         ]
-      : [[0.5, 8]];
+      : kind === "bridge"
+        ? [
+            [0.5, 6],
+            [0.75, 3],
+          ]
+        : [[0.5, 8]];
   const seen = new Set<number>();
   return stages.flatMap(([pct, reps]) => {
     const rounded =
@@ -159,7 +165,9 @@ export function warmup(
     const n = +Math.min(load, Math.max(minimum, rounded)).toFixed(3);
     if (seen.has(n)) return [];
     seen.add(n);
-    return [{ load: n, reps, rest: kind === "main" ? 60 : 45 }];
+    return [
+      { load: n, reps, rest: kind === "main" || kind === "bridge" ? 60 : 45 },
+    ];
   });
 }
 export function todayKey(date = new Date(), timezone = "America/Sao_Paulo") {
@@ -229,7 +237,7 @@ export function isExercise(x: any): x is Exercise {
     x.rest >= 15 &&
     x.rest <= 600 &&
     ["bar", "dumbbell", "machine", "body"].includes(x.unit) &&
-    ["main", "secondary", "none"].includes(x.warm) &&
+    ["main", "bridge", "secondary", "none"].includes(x.warm) &&
     ["notes", "alternative", "machine"].every((k) => typeof x[k] === "string")
   );
 }
@@ -241,6 +249,19 @@ export function validPayload(kind: Kind, p: any): boolean {
         return (
           typeof p.id === "string" &&
           typeof p.name === "string" &&
+          (p.recovery === undefined ||
+            (Array.isArray(p.recovery) &&
+              p.recovery.length <= 7 &&
+              p.recovery.every(
+                (r: any) =>
+                  Number.isInteger(r.day) &&
+                  r.day >= 0 &&
+                  r.day <= 6 &&
+                  typeof r.name === "string" &&
+                  r.name.length <= 200 &&
+                  typeof r.notes === "string" &&
+                  r.notes.length <= 4000,
+              ))) &&
           Array.isArray(p.workouts) &&
           p.workouts.length <= 14 &&
           p.workouts.every(
@@ -440,14 +461,33 @@ export function cleanupCandidates(docs: Entity[], before: string) {
   const sessions = visible(docs, "session");
   const latest = new Set<string>();
   const references = new Set<string>();
-  for (const s of [...sessions].sort((a, b) =>
-    b.payload.actualDate.localeCompare(a.payload.actualDate),
+  const completedReferences = new Set<string>();
+  const allSets = visible(docs, "set");
+  for (const s of [...sessions].sort(
+    (a, b) =>
+      b.payload.actualDate.localeCompare(a.payload.actualDate) ||
+      Date.parse(b.payload.startedAt) - Date.parse(a.payload.startedAt),
   )) {
     for (const e of s.payload.workout.exercises as Exercise[]) {
       const key = [e.id, e.name, e.unit, e.min, e.max, e.machine].join("|");
+      // Guided comparisons need a completed reference even when a newer draft exists.
+      if (
+        s.payload.finishedAt &&
+        Date.parse(s.payload.finishedAt) <= Date.now() &&
+        !completedReferences.has(key) &&
+        allSets.some(
+          (d) =>
+            d.payload.sessionId === s.id &&
+            d.payload.exerciseId === e.id &&
+            d.payload.machine === e.machine,
+        )
+      ) {
+        completedReferences.add(key);
+        latest.add(s.id);
+      }
       if (
         !references.has(key) &&
-        visible(docs, "set").some(
+        allSets.some(
           (d) =>
             d.payload.sessionId === s.id &&
             d.payload.exerciseId === e.id &&

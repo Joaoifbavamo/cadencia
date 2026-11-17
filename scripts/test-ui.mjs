@@ -23,7 +23,7 @@ async function reachable() {
   }
 }
 const suites = webkit
-  ? ["progress-navigation.browser.mjs", "frontend-integral.browser.mjs"]
+  ? ["progress-navigation.browser.mjs", "frontend-integral.browser.mjs", "training-insights.browser.mjs"]
   : production
     ? ["pwa.mjs"]
     : motion
@@ -42,6 +42,7 @@ const suites = webkit
           "glass-motivation.mjs",
           "progress-navigation.browser.mjs",
           "frontend-integral.browser.mjs",
+          "training-insights.browser.mjs",
         ];
 try {
   if (!(await reachable())) {
