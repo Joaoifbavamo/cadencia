@@ -1,3 +1,4 @@
+import { chooseDemoWorkout } from "./helpers/demo-navigation.mjs";
 import { chromium, expect } from "@playwright/test";
 import fs from "node:fs";
 const base = process.env.REVIEW_BASE_URL || "http://127.0.0.1:5177";
@@ -42,13 +43,7 @@ async function overflow(label) {
 try {
   await p.goto(base);
   await p.getByRole("button", { name: "Conhecer a demonstração" }).click();
-  await p
-    .getByRole("button", { name: "Escolher um treino", exact: true })
-    .click();
-  await p
-    .getByRole("dialog")
-    .getByRole("button", { name: /Superior/ })
-    .click();
+  await chooseDemoWorkout(p, /Superior/);
   await overflow("Hoje");
   await p.getByRole("button", { name: "Começar treino" }).click();
   await expect(

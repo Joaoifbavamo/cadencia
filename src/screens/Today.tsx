@@ -8,11 +8,15 @@ import {
   visible,
   type Plan,
   type Workout,
+  type Entity,
   uid,
   findResumableSession,
 } from "../domain.ts";
 import { formatDate, Sheet } from "../components.tsx";
 import { nextWorkout, workoutSets } from "../experience.ts";
+import ActivityComposer from "../ActivityComposer.tsx";
+import QuickActivities from "../QuickActivities.tsx";
+import { activitySummary, type ActivityCategory } from "../activity.ts";
 export default function Today({
   model,
   onStart,
@@ -27,6 +31,11 @@ export default function Today({
   onAgenda: () => void;
 }) {
   const removal = usePausedRemoval(model);
+  const [activity, setActivity] = useState<{
+    initial?: Entity;
+    category?: ActivityCategory;
+  } | null>(null);
+  const [activityFeedback, setActivityFeedback] = useState("");
   const date = todayKey(new Date(), model.profile.timezone);
   const plan = visible(model.docs, "plan")[0]?.payload as Plan | undefined;
   const scheduled = plannedWorkout(plan, date);
@@ -179,27 +188,85 @@ export default function Today({
             {recovery?.name ??
               (plan ? "Hoje é dia livre." : "Vamos preparar sua ficha.")}
           </h2>
-          <p>
-            {recovery
-              ? recovery.notes
-              : plan
+          {recovery && (
+            <>
+              <p>Registre o que fez, sem precisar abrir a Agenda.</p>
+              <QuickActivities
+                heading={false}
+                onCardio={() => {
+                  setActivityFeedback("");
+                  setActivity({ category: "cardio" });
+                }}
+                onAbs={() => {
+                  setActivityFeedback("");
+                  setActivity({ category: "abs" });
+                }}
+              />
+              <details className="recovery-day-notes">
+                <summary>Ver orientação para hoje</summary>
+                <p>{recovery.notes}</p>
+              </details>
+            </>
+          )}
+          {!recovery && (
+            <p>
+              {plan
                 ? "Pode descansar, registrar cardio ou fazer um treino em outro dia."
                 : "Importe a ficha pessoal em Ajustes ou monte o treino no editor."}
-          </p>
+            </p>
+          )}
           <button
-            className="primary start-workout"
+            className={
+              (recovery ? "text-button" : "primary") + " start-workout"
+            }
             onClick={() => (plan ? openChoice() : onPlan())}
           >
             {plan ? "Escolher um treino" : "Criar meu treino"}
             <Plus size={18} />
           </button>
-          {plan && (
-            <button className="secondary start-workout" onClick={onAgenda}>
-              Registrar cardio ou atividade
-            </button>
-          )}
         </section>
       )}
+      {(!recovery || selected || draft) && (
+        <QuickActivities
+          onCardio={() => {
+            setActivityFeedback("");
+            setActivity({ category: "cardio" });
+          }}
+          onAbs={() => {
+            setActivityFeedback("");
+            setActivity({ category: "abs" });
+          }}
+        />
+      )}
+      {activityFeedback && (
+        <p className="activity-confirmation" role="status">
+          <Check size={17} />
+          {activityFeedback}
+        </p>
+      )}
+      <div
+        className="today-activities"
+        role="region"
+        aria-label="Atividades registradas hoje"
+      >
+        {visible(model.docs, "activity")
+          .filter((a) => a.payload.date === date)
+          .map((a) => (
+            <div key={a.id}>
+              <div>
+                <strong>{a.payload.name}</strong>
+                <p>{activitySummary(a.payload)}</p>
+              </div>
+              <button
+                className="text-button"
+                aria-label={`Editar atividade ${a.payload.name}`}
+                onClick={() => setActivity({ initial: a })}
+              >
+                Editar
+              </button>
+            </div>
+          ))}
+      </div>
       {drafts.some((s) => s.id !== draft?.id) && (
         <details className="paused-workouts">
           <summary>
@@ -397,6 +464,21 @@ export default function Today({
             ))}
           </div>
         </Sheet>
+      )}
+      {activity && (
+        <ActivityComposer
+          model={model}
+          date={date}
+          initial={activity.initial}
+          initialCategory={activity.category}
+          onClose={() => setActivity(null)}
+          onSaved={(next) => {
+            setActivity(null);
+            setActivityFeedback(
+              `Atividade salva em ${formatDate(next)}, neste aparelho.`,
+            );
+          }}
+        />
       )}
     </div>
   );

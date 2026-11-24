@@ -1,3 +1,4 @@
+import { chooseDemoWorkout } from "./helpers/demo-navigation.mjs";
 import { chromium } from "@playwright/test";
 const b = await chromium.launch({
     executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -12,8 +13,7 @@ const errors = [];
 p.on("pageerror", (e) => errors.push(e.message));
 await p.goto(process.env.REVIEW_BASE_URL || "http://127.0.0.1:5177");
 await p.getByRole("button", { name: "Conhecer a demonstração" }).click();
-await p.getByRole("button", { name: "Escolher um treino" }).click();
-await p.getByRole("button", { name: /Superior · exemplo/ }).click();
+await chooseDemoWorkout(p);
 if ((await p.locator(".today-exercises details").getAttribute("open")) !== null)
   throw Error("Lista não recolhida");
 await p.getByRole("button", { name: "Começar treino" }).click();

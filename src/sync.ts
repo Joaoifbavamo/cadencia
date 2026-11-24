@@ -1,5 +1,5 @@
 import type { Entity } from "./domain.ts";
-import { uid } from "./domain.ts";
+import { uid, payloadWithinLimit } from "./domain.ts";
 import { LocalStore } from "./storage.ts";
 import { acknowledge, mergeRemote } from "./merge.ts";
 import { supabase } from "./auth.ts";
@@ -40,6 +40,11 @@ export class SyncEngine {
       const handled = new Set<string>();
       for (const sent of pending) {
         if (this.stopped) return;
+        if (!sent.deleted && !payloadWithinLimit(sent.payload)) {
+          this.error =
+            "Há um registro muito grande pendente. Exporte seus dados e reduza o conteúdo desse registro. Os demais registros continuam sincronizando.";
+          continue;
+        }
         if (sent.batchId) {
           if (handled.has(sent.batchId)) continue;
           handled.add(sent.batchId);
@@ -47,6 +52,11 @@ export class SyncEngine {
             (d) => d.batchId === sent.batchId && d.dirty,
           );
           if (batch.some((d) => d.conflict)) continue;
+          if (batch.some((d) => !d.deleted && !payloadWithinLimit(d.payload))) {
+            this.error =
+              "Há um lote muito grande pendente. Exporte seus dados e revise seu conteúdo; os demais registros continuam sincronizando.";
+            continue;
+          }
           const { data, error } = await supabase.rpc("commit_batch", {
             p_changes: batch.map(parameters),
           });

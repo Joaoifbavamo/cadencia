@@ -227,21 +227,33 @@ function GuidedWorkout({
     );
     window.scrollTo({ top: 0 });
   };
-  const openExercise = (id: string) => {
-    const e = session.workout.exercises.find((s) => s.id === id)!;
-    stopRest();
-    setEditing(null);
-    patch({
-      exerciseId: id,
-      warmIndex: 0,
-      phase: history
-        ? "records"
-        : e.warm !== "none" && !prepared(session, model.docs, flow.warmed, id)
-          ? "warmup"
-          : "work",
+  const openExercise = (id: string) =>
+    run(async () => {
+      if (!history && Object.hasOwn(session.skipped, id)) {
+        const skipped = { ...session.skipped };
+        delete skipped[id];
+        await model.save(
+          session.id,
+          "session",
+          { ...session, skipped },
+          false,
+          JSON.stringify(session),
+        );
+      }
+      const e = session.workout.exercises.find((s) => s.id === id)!;
+      stopRest();
+      setEditing(null);
+      patch({
+        exerciseId: id,
+        warmIndex: 0,
+        phase: history
+          ? "records"
+          : e.warm !== "none" && !prepared(session, model.docs, flow.warmed, id)
+            ? "warmup"
+            : "work",
+      });
+      window.scrollTo({ top: 0 });
     });
-    window.scrollTo({ top: 0 });
-  };
   const saveSet = async (
     load: string,
     reps: string,
@@ -535,6 +547,7 @@ function GuidedWorkout({
                   </p>
                 )}
                 <WorkingSetForm
+                  draftKey={`set-draft-${accountKey}-${session.id}-${exercise.id}-${active}-${editing !== null}`}
                   increment={model.profile.increment}
                   key={exercise.id + "-" + active + "-" + (editing !== null)}
                   exercise={exercise}
@@ -663,12 +676,21 @@ function GuidedWorkout({
                   (s) => s.payload.exerciseId === e.id,
                 ).length;
                 return (
-                  <button key={e.id} onClick={() => openExercise(e.id)}>
+                  <button
+                    key={e.id}
+                    disabled={busy}
+                    onClick={() => openExercise(e.id)}
+                    aria-label={
+                      Object.hasOwn(session.skipped, e.id)
+                        ? `Retomar ${e.name}`
+                        : undefined
+                    }
+                  >
                     <span>{i + 1}</span>
                     <div>
                       <b>{e.name}</b>
                       <small>
-                        {session.skipped[e.id]
+                        {Object.hasOwn(session.skipped, e.id)
                           ? "Pulado · " + session.skipped[e.id]
                           : `${done}/${e.sets} séries válidas`}
                       </small>

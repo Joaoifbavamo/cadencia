@@ -1,0 +1,226 @@
+.activity-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+.activity-fields .section-tabs {
+  margin-bottom: 0;
+}
+.activity-fields label {
+  margin: 0;
+  min-width: 0;
+}
+.activity-panel {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+[data-theme="dark"] .activity-date input {
+  color-scheme: dark;
+}
+[data-theme="light"] .activity-date input {
+  color-scheme: light;
+}
+.activity-date {
+  max-width: 230px;
+}
+.activity-helper {
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  color: var(--muted);
+  margin: 0;
+}
+.duration-presets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.duration-presets button {
+  min-height: 46px;
+  padding-inline: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.duration-presets [aria-pressed="true"],
+.activity-presets [aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.activity-duration input {
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+.activity-more,
+.abdominal-details {
+  border-top: 1px solid var(--line);
+  padding-top: 4px;
+}
+.activity-more > summary,
+.abdominal-details > summary {
+  min-height: 48px;
+  align-content: center;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+.abdominal-details summary span {
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin-left: 6px;
+}
+.activity-more[open] {
+  display: grid;
+  gap: 16px;
+}
+.abdominal-set {
+  padding-block: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.abdominal-set-title {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: 8px;
+  align-items: end;
+  margin-bottom: 12px;
+}
+.abdominal-set-title button {
+  min-height: 48px;
+}
+.abdominal-set label {
+  font-size: 0.8125rem;
+}
+.abdominal-set .form-pair {
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.abdominal-set input {
+  min-width: 0;
+  width: 100%;
+}
+.abdominal-add {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+.abdominal-add button {
+  white-space: normal;
+  min-height: 48px;
+  padding: 10px;
+  font-size: 0.8125rem;
+}
+.activity-save {
+  margin-top: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+.sheet-with-footer[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sheet-with-footer .sheet-top {
+  position: static;
+  flex-shrink: 0;
+}
+.sheet-body {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+.sheet-footer {
+  flex-shrink: 0;
+}
+.sheet-with-footer .activity-save p {
+  margin-bottom: 0;
+}
+.activity-save > button {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 10px;
+}
+.quick-activities {
+  margin-block: 24px;
+}
+.quick-activities h2 {
+  font-size: 1rem;
+  margin-bottom: 12px;
+}
+.recovery-day-notes {
+  margin-block: 16px;
+  border-top: 1px solid var(--line);
+}
+.recovery-day-notes summary {
+  min-height: 44px;
+  align-content: center;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.recovery-day-notes p {
+  font-size: 0.875rem;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-top: 10px;
+}
+.quick-activity-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.quick-activity-buttons button {
+  min-height: 52px;
+}
+.activity-confirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  margin-top: 14px;
+  font-size: 0.875rem;
+}
+.activity-confirmation svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.today-activities {
+  margin-top: 16px;
+}
+.today-activities > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block: 12px;
+  border-top: 1px solid var(--line);
+}
+.today-activities strong {
+  font-size: 0.875rem;
+}
+.today-activities p {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.agenda-activity {
+  flex-wrap: wrap;
+}
+.agenda-activity > div:first-child {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.activity-row-actions {
+  display: flex;
+  gap: 12px;
+  flex: 0 0 auto !important;
+}
+@media (max-width: 400px) {
+  .abdominal-add {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

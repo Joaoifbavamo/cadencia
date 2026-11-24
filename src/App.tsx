@@ -492,7 +492,7 @@ export default function App() {
         )}
       </div>
     );
-  const docs = [...store.current!.docs];
+  const docs = store.current!.docs;
   const model: Model = {
     docs,
     profile: visible(docs, "profile")[0]?.payload || defaults,
@@ -955,40 +955,122 @@ function Login({ onDemo }: { onDemo: () => void }) {
 }
 function Recovery({ onDone }: { onDone: () => void }) {
   const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [requestLink, setRequestLink] = useState(false);
+  const leave = () => {
+    history.replaceState(null, "", location.pathname);
+    onDone();
+  };
   return (
     <div className="recovery">
       <Mark />
-      <h1>Crie uma nova senha</h1>
+      <h1>{requestLink ? "Solicitar novo link" : "Crie uma nova senha"}</h1>
       <form
+        aria-busy={busy}
         onSubmit={async (e) => {
           e.preventDefault();
+          if (busy) return;
           const f = new FormData(e.currentTarget);
-          const { error } = await supabase.auth.updateUser({
-            password: String(f.get("password")),
-          });
-          if (error)
-            setMessage("Não foi possível alterar. Solicite um novo link.");
-          else {
-            history.replaceState(null, "", location.pathname);
-            onDone();
+          setBusy(true);
+          setMessage("");
+          try {
+            if (requestLink) {
+              const { error } = await supabase.auth.resetPasswordForEmail(
+                String(f.get("email")),
+                { redirectTo: location.origin + location.pathname },
+              );
+              if (error) throw error;
+              setMessage(
+                "Se o endereço tiver uma conta autorizada, enviaremos as instruções.",
+              );
+            } else {
+              const { error } = await supabase.auth.updateUser({
+                password: String(f.get("password")),
+              });
+              if (error) throw error;
+              leave();
+            }
+          } catch {
+            setMessage(
+              requestLink
+                ? "Não foi possível solicitar a recuperação. Confira a conexão e tente novamente."
+                : "Não foi possível alterar a senha. O link pode ter expirado. Solicite um novo link.",
+            );
+          } finally {
+            setBusy(false);
           }
         }}
       >
-        <label>
-          Nova senha
-          <input
-            type="password"
-            name="password"
-            minLength={12}
-            required
-            autoComplete="new-password"
-          />
-        </label>
-        <button className="primary">
-          Salvar nova senha <Check size={18} />
+        {requestLink ? (
+          <label>
+            Email
+            <input
+              type="email"
+              name="email"
+              required
+              autoComplete="email"
+              disabled={busy}
+            />
+          </label>
+        ) : (
+          <label>
+            Nova senha
+            <input
+              type="password"
+              name="password"
+              minLength={12}
+              required
+              autoComplete="new-password"
+              disabled={busy}
+            />
+          </label>
+        )}
+        <button className="primary" disabled={busy}>
+          {busy
+            ? requestLink
+              ? "Enviando…"
+              : "Salvando…"
+            : requestLink
+              ? "Enviar novo link"
+              : "Salvar nova senha"}
+          <Check size={18} />
         </button>
       </form>
       <p role="status">{message}</p>
+      <button
+        type="button"
+        className="text-button"
+        disabled={busy}
+        onClick={() => {
+          setRequestLink(!requestLink);
+          setMessage("");
+        }}
+      >
+        {requestLink ? "Já tenho um link válido" : "Solicitar novo link"}
+      </button>
+      <button
+        type="button"
+        className="text-button"
+        disabled={busy}
+        onClick={async () => {
+          if (busy) return;
+          setBusy(true);
+          setMessage("");
+          try {
+            const { error } = await supabase.auth.signOut({ scope: "local" });
+            if (error) throw error;
+            leave();
+          } catch {
+            setMessage(
+              "Não foi possível voltar para entrar. Confira a conexão e tente novamente.",
+            );
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        Voltar para entrar
+      </button>
     </div>
   );
 }

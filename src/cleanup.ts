@@ -1,4 +1,10 @@
-import { cleanupCandidates, dateValid, uid, type Entity } from "./domain.ts";
+import {
+  cleanupCandidates,
+  dateValid,
+  uid,
+  assertPayloadSize,
+  type Entity,
+} from "./domain.ts";
 import { editEntity } from "./merge.ts";
 
 type Group = { records: { id: string; fingerprint: string }[] };
@@ -82,7 +88,7 @@ export function cleanupStep(
   );
   const byId = new Map(docs.map((d) => [d.id, d]));
   const selected: Entity[] = [];
-  const monthly = new Map<string, number>();
+  const monthly = new Map<string, string[]>();
   while (job.cursor < job.groups.length) {
     const group = job.groups[job.cursor];
     const records = group.records.map((r) => byId.get(r.id));
@@ -114,7 +120,7 @@ export function cleanupStep(
     if (selected.length + records.length + summaryCount > 500) break;
     selected.push(...(records as Entity[]));
     if (job.summaries && month)
-      monthly.set(month, (monthly.get(month) ?? 0) + 1);
+      monthly.set(month, [...(monthly.get(month) ?? []), session!.id]);
     job.processed += group.records.length;
     job.cursor++;
   }
@@ -123,11 +129,22 @@ export function cleanupStep(
     ...editEntity(d, {}, true),
     batchId,
   }));
-  for (const [month, count] of monthly) {
+  for (const [month, ids] of monthly) {
     const old = docs.find(
       (d) => !d.deleted && d.kind === "summary" && d.payload.month === month,
     );
-    const payload = { month, sessions: (old?.payload.sessions ?? 0) + count };
+    const previousIds: string[] = old?.payload.removedSessionIds ?? [];
+    const removedSessionIds = [...new Set([...previousIds, ...ids])];
+    const payload = {
+      month,
+      sessions:
+        (old?.payload.sessions ?? 0) +
+        removedSessionIds.length -
+        previousIds.length,
+      removedSessionIds,
+    };
+    // Never prepare tombstones if their identifying summary cannot be synced.
+    assertPayloadSize(payload);
     changes.push(
       old
         ? { ...editEntity(old, payload, false), batchId }

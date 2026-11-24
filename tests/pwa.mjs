@@ -1,3 +1,4 @@
+import { chooseDemoWorkout } from "./helpers/demo-navigation.mjs";
 import { chromium } from "@playwright/test";
 const browser = await chromium.launch({
   executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -35,8 +36,7 @@ await page
   .or(page.getByRole("tab", { name: "Hoje", exact: true }))
   .last()
   .click();
-await page.getByRole("button", { name: "Escolher um treino" }).click();
-await page.getByRole("button", { name: /Superior · exemplo/ }).click();
+await chooseDemoWorkout(page);
 await page.getByRole("button", { name: "Começar treino" }).click();
 await page
   .getByRole("button", { name: "Pular aquecimento", exact: true })
@@ -60,7 +60,9 @@ await context.setOffline(true);
 await page.reload();
 await page.getByRole("button", { name: "Conhecer a demonstração" }).waitFor();
 await page.getByRole("button", { name: "Conhecer a demonstração" }).click();
-await page.getByRole("heading", { name: "Descanso concluído", exact: true }).waitFor();
+await page
+  .getByRole("heading", { name: "Descanso concluído", exact: true })
+  .waitFor();
 console.log(
   JSON.stringify({
     passed:

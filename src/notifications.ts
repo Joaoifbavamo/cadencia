@@ -1,6 +1,7 @@
 import { supabase } from "./auth.ts";
 import { VAPID_PUBLIC_KEY } from "./push-config.ts";
 import { restTag } from "./notification-domain.ts";
+import { createRestQueue, restDeadlineCurrent } from "./rest-queue.ts";
 export const supportsPush = () =>
   typeof Notification !== "undefined" &&
   "serviceWorker" in navigator &&
@@ -138,16 +139,22 @@ export async function updatePush(values: {
     localStorage.setItem("push-rest", String(values.rest_enabled));
   if (values.enabled === false) localStorage.removeItem("push-active");
 }
-let queue: Promise<unknown> = Promise.resolve();
+const restQueue = createRestQueue();
 export function scheduleRest(sessionId: string, deadline: number) {
   if (!localStorage.getItem("push-active")) return Promise.resolve();
-  const task = async () => {
+  return restQueue.schedule(sessionId, async (valid) => {
+    // The caller records the current deadline before scheduling. A callback
+    // arriving after cancellation/replacement must not resurrect its old rest.
+    const current = () =>
+      valid() &&
+      restDeadlineCurrent(deadline, localStorage.getItem("rest-" + sessionId));
+    if (!current()) return;
     const row = await currentPush();
-    if (!row?.enabled || !row.rest_enabled) return;
+    if (!current() || !row?.enabled || !row.rest_enabled) return;
     const {
       data: { session },
     } = await supabase.auth.getSession();
-    if (!session) return;
+    if (!current() || !session) return;
     const { error: remove } = await supabase
       .from("push_jobs")
       .delete()
@@ -155,7 +162,7 @@ export function scheduleRest(sessionId: string, deadline: number) {
       .eq("kind", "rest")
       .is("delivered_at", null);
     if (remove) throw remove;
-    if (deadline > Date.now()) {
+    if (current() && deadline > Date.now()) {
       const { error } = await supabase.from("push_jobs").insert({
         user_id: session.user.id,
         subscription_id: row.id,
@@ -166,10 +173,7 @@ export function scheduleRest(sessionId: string, deadline: number) {
       });
       if (error) throw error;
     }
-  };
-  const next = queue.then(task);
-  queue = next.catch(() => {});
-  return next;
+  });
 }
 export async function foregroundRest(sessionId: string, deadline: number) {
   if (
@@ -217,14 +221,16 @@ export async function testPush() {
 }
 
 export async function cancelRestForSession(sessionId: string) {
-  const row = await currentPush();
-  if (!row) return;
-  const { error } = await supabase
-    .from("push_jobs")
-    .delete()
-    .eq("subscription_id", row.id)
-    .eq("kind", "rest")
-    .is("delivered_at", null)
-    .like("tag", "rest-" + sessionId + "-%");
-  if (error) throw Error("Não foi possível cancelar o aviso remoto.");
+  return restQueue.cancel(sessionId, async () => {
+    const row = await currentPush();
+    if (!row) return;
+    const { error } = await supabase
+      .from("push_jobs")
+      .delete()
+      .eq("subscription_id", row.id)
+      .eq("kind", "rest")
+      .is("delivered_at", null)
+      .like("tag", "rest-" + sessionId + "-%");
+    if (error) throw Error("Não foi possível cancelar o aviso remoto.");
+  });
 }

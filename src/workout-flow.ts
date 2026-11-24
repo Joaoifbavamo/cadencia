@@ -66,7 +66,7 @@ export function flowAfterRest(f: Flow, session: Session, docs: Entity[]): Flow {
     .slice(index + 1)
     .find(
       (e) =>
-        !session.skipped[e.id] &&
+        !Object.hasOwn(session.skipped, e.id) &&
         visible(docs, "set").filter(
           (d) =>
             d.payload.sessionId === session.id && d.payload.exerciseId === e.id,

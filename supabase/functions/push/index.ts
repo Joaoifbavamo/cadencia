@@ -1,4 +1,5 @@
 import { motivationBody } from "./motivation.ts";
+import { processPushJobs, PUSH_TIMEOUT_MS } from "./worker.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import * as webpush from "npm:web-push@4.0.0";
 const admin = createClient(
@@ -51,7 +52,7 @@ async function send(subscription: any, payload: any) {
     headers: details.headers,
     body: details.body,
     redirect: "error",
-    signal: AbortSignal.timeout(10000),
+    signal: AbortSignal.timeout(PUSH_TIMEOUT_MS),
   });
 }
 Deno.serve(async (req) => {
@@ -188,10 +189,20 @@ Deno.serve(async (req) => {
     }
     const { data: jobs, error } = await admin.rpc("claim_push_jobs");
     if (error) throw error;
-    let delivered = 0;
-    for (const job of jobs) {
-      try {
-        const sent = await send(job.subscription, {
+    const delivered = await processPushJobs(jobs, {
+      now: Date.now,
+      authorize: async (job: any) => {
+        const { data, error } = await admin.rpc("authorize_push_job", {
+          job_id: job.id,
+          claim_attempt: job.attempts,
+          claim_lease: job.lease_until,
+        });
+        if (error) throw error;
+        if (data) job.subscription = data;
+        return data;
+      },
+      send: async (job: any, subscription) => {
+        const sent = await send(subscription, {
           title:
             job.kind === "rest"
               ? "Descanso concluído"
@@ -207,21 +218,20 @@ Deno.serve(async (req) => {
           tag: job.tag,
           kind: job.kind,
         });
-        if (sent.ok) {
-          await admin
-            .from("push_jobs")
-            .update({ delivered_at: new Date().toISOString() })
-            .eq("id", job.id);
-          delivered++;
-        } else if (sent.status === 404 || sent.status === 410)
-          await admin
-            .from("push_subscriptions")
-            .update({ enabled: false })
-            .eq("id", job.subscription_id);
-      } catch {
-        /* Lease permits bounded retries; never log subscription or secrets. */
-      }
-    }
+        return sent.status;
+      },
+      settle: async (job: any, outcome) => {
+        const { data, error } = await admin.rpc("settle_push_job", {
+          job_id: job.id,
+          claim_attempt: job.attempts,
+          claim_lease: job.lease_until,
+          outcome,
+          sent_subscription: job.subscription,
+        });
+        if (error) throw error;
+        return data === true;
+      },
+    });
     return response({ ok: true, delivered });
   } catch {
     return response({ error: "Não foi possível enviar a notificação." }, 500);

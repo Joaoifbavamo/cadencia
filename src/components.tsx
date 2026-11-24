@@ -29,10 +29,12 @@ export function Sheet({
   title,
   onClose,
   children,
+  footer,
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  footer?: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -55,7 +57,7 @@ export function Sheet({
   return (
     <dialog
       ref={ref}
-      className="sheet"
+      className={footer ? "sheet sheet-with-footer" : "sheet"}
       aria-label={title}
       onCancel={(e) => {
         e.preventDefault();
@@ -68,7 +70,14 @@ export function Sheet({
           <X />
         </button>
       </div>
-      {children}
+      {footer ? (
+        <>
+          <div className="sheet-body">{children}</div>
+          <div className="sheet-footer">{footer}</div>
+        </>
+      ) : (
+        children
+      )}
     </dialog>
   );
 }
@@ -77,6 +86,7 @@ export const formatDate = (date: string) =>
   new Date(date + "T12:00:00Z").toLocaleDateString("pt-BR", {
     day: "numeric",
     month: "short",
+    year: "numeric",
     timeZone: "UTC",
   });
 export function download(

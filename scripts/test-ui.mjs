@@ -28,6 +28,7 @@ const suites = webkit
       "frontend-integral.browser.mjs",
       "training-insights.browser.mjs",
       "experience-refresh.browser.mjs",
+      "quick-activities.browser.mjs",
     ]
   : production
     ? ["pwa.mjs"]
@@ -36,6 +37,7 @@ const suites = webkit
       : [
           "guided-workout.browser.mjs",
           "workout-review.browser.mjs",
+          "audit-workout.browser.mjs",
           "mobile-clean.mjs",
           "archive-flow.mjs",
           "editor-routes.browser.mjs",
@@ -49,6 +51,7 @@ const suites = webkit
           "frontend-integral.browser.mjs",
           "training-insights.browser.mjs",
           "experience-refresh.browser.mjs",
+          "quick-activities.browser.mjs",
         ];
 try {
   if (!(await reachable())) {

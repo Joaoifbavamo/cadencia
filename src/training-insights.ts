@@ -50,6 +50,21 @@ export function previousPerformance(
     : undefined;
 }
 export type Metric = "load" | "reps" | "volume";
+export function sortHistoryRows(
+  rows: HistoryRow[],
+  sessions: Map<string, Session>,
+  descending = false,
+) {
+  const direction = descending ? -1 : 1;
+  return [...rows].sort(
+    (a, b) =>
+      direction *
+        (a.date.localeCompare(b.date) ||
+          (Date.parse(sessions.get(a.sessionId)?.startedAt ?? "") || 0) -
+            (Date.parse(sessions.get(b.sessionId)?.startedAt ?? "") || 0) ||
+          a.sessionId.localeCompare(b.sessionId)) || a.index - b.index,
+  );
+}
 export function exercisePoints(rows: HistoryRow[], metric: Metric) {
   const days = new Map<string, HistoryRow[]>();
   for (const row of rows) {
@@ -69,8 +84,12 @@ export function exercisePoints(rows: HistoryRow[], metric: Metric) {
             : sets.reduce((n, s) => n + s.load * s.reps, 0),
     }));
 }
-export function trainingSummary(docs: Entity[], from: string, through: string) {
-  const index = buildHistoryIndex(docs);
+export function trainingSummary(
+  docs: Entity[],
+  from: string,
+  through: string,
+  index = buildHistoryIndex(docs),
+) {
   const sessions = [...index.sessions.entries()].filter(
     ([, s]) => s.finishedAt && s.actualDate >= from && s.actualDate <= through,
   );

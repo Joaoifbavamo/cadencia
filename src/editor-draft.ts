@@ -1,4 +1,4 @@
-import type { Plan } from "./domain.ts";
+import { WARM_KINDS, type Plan } from "./domain.ts";
 type DraftStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 export interface EditorDraft {
   version: 1;
@@ -30,7 +30,7 @@ function isPlanShape(p: any): p is Plan {
               Number.isFinite(e[k]),
             ) &&
             ["bar", "dumbbell", "machine", "body"].includes(e.unit) &&
-            ["main", "secondary", "none"].includes(e.warm),
+            (WARM_KINDS as readonly string[]).includes(e.warm),
         ),
     )
   );

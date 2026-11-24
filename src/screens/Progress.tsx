@@ -8,6 +8,7 @@ import {
   seriesCsv,
   shiftDate,
   trainingSummary,
+  sortHistoryRows,
   type Metric,
 } from "../training-insights.ts";
 import TrendChart from "../TrendChart.tsx";
@@ -34,21 +35,22 @@ export default function Progress({ model }: { model: Model }) {
   const cutoff =
     period === "0" ? "0000-01-01" : shiftDate(today, -(Number(period) - 1));
   const summary = useMemo(
-    () => trainingSummary(model.docs, cutoff, today),
-    [model.docs, cutoff, today],
+    () => trainingSummary(model.docs, cutoff, today, history),
+    [model.docs, cutoff, today, history],
   );
-  const data = rows
-    .filter(
+  const data = sortHistoryRows(
+    rows.filter(
       (r) => r.key === selected?.key && r.date >= cutoff && r.date <= today,
-    )
-    .sort((a, b) => a.date.localeCompare(b.date) || a.index - b.index);
+    ),
+    history.sessions,
+  );
   const completed = data.filter((r) => summary.completedIds.has(r.sessionId));
   const points = exercisePoints(completed, metric);
   const pageIndex = Math.min(
     page,
     Math.max(0, Math.ceil(data.length / pageSize) - 1),
   );
-  const recent = [...data].reverse();
+  const recent = sortHistoryRows(data, history.sessions, true);
   const pageRows = recent.slice(
     pageIndex * pageSize,
     (pageIndex + 1) * pageSize,
@@ -337,6 +339,18 @@ export default function Progress({ model }: { model: Model }) {
                   <tr key={r.id}>
                     <td>
                       {formatDate(r.date)}
+                      <small className="series-draft">
+                        {history.sessions.get(r.sessionId)?.workout.name} ·{" "}
+                        {new Date(
+                          history.sessions.get(r.sessionId)?.startedAt ??
+                            r.date,
+                        ).toLocaleTimeString("pt-BR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          timeZone:
+                            model.profile?.timezone ?? "America/Sao_Paulo",
+                        })}
+                      </small>
                       {!history.sessions.get(r.sessionId)?.finishedAt && (
                         <small className="series-draft">Em andamento</small>
                       )}

@@ -52,6 +52,8 @@ export interface Activity {
   name: string;
   minutes: number;
   notes: string;
+  category?: "cardio" | "abs" | "other";
+  abdominalSets?: { exercise: string; reps: number; load: number }[];
 }
 export interface Profile {
   barWeight: number | null;
@@ -237,12 +239,32 @@ export function isExercise(x: any): x is Exercise {
     x.rest >= 15 &&
     x.rest <= 600 &&
     ["bar", "dumbbell", "machine", "body"].includes(x.unit) &&
-    ["main", "bridge", "secondary", "none"].includes(x.warm) &&
+    (WARM_KINDS as readonly string[]).includes(x.warm) &&
     ["notes", "alternative", "machine"].every((k) => typeof x[k] === "string")
   );
 }
+export const WARM_KINDS = ["main", "bridge", "secondary", "none"] as const;
+
+// Reserve space for PostgreSQL JSON formatting and transport metadata.
+export function payloadWithinLimit(payload: unknown): boolean {
+  try {
+    const json = JSON.stringify(payload, null, 2);
+    return (
+      typeof json === "string" &&
+      new TextEncoder().encode(json).byteLength <= 900000
+    );
+  } catch {
+    return false;
+  }
+}
+export function assertPayloadSize(payload: unknown): void {
+  if (!payloadWithinLimit(payload))
+    throw Error(
+      "Registro muito grande. Reduza o conteúdo antes de salvar; seu registro anterior foi preservado.",
+    );
+}
 export function validPayload(kind: Kind, p: any): boolean {
-  if (!p || typeof p !== "object") return false;
+  if (!p || typeof p !== "object" || !payloadWithinLimit(p)) return false;
   try {
     switch (kind) {
       case "plan":
@@ -264,6 +286,8 @@ export function validPayload(kind: Kind, p: any): boolean {
               ))) &&
           Array.isArray(p.workouts) &&
           p.workouts.length <= 14 &&
+          new Set(p.workouts.map((w: any) => w?.id)).size ===
+            p.workouts.length &&
           p.workouts.every(
             (w: any) =>
               typeof w.id === "string" &&
@@ -273,7 +297,9 @@ export function validPayload(kind: Kind, p: any): boolean {
               w.day <= 6 &&
               Array.isArray(w.exercises) &&
               w.exercises.length <= 30 &&
-              w.exercises.every(isExercise),
+              w.exercises.every(isExercise) &&
+              new Set(w.exercises.map((e: any) => e.id)).size ===
+                w.exercises.length,
           )
         );
       case "set":
@@ -329,9 +355,28 @@ export function validPayload(kind: Kind, p: any): boolean {
           p.name.length > 0 &&
           typeof p.minutes === "number" &&
           Number.isFinite(p.minutes) &&
-          p.minutes >= 1 &&
+          p.minutes >= (p.category === "abs" ? 0 : 1) &&
           p.minutes <= 1440 &&
-          typeof p.notes === "string"
+          typeof p.notes === "string" &&
+          (p.category === undefined ||
+            ["cardio", "abs", "other"].includes(p.category)) &&
+          (p.abdominalSets === undefined ||
+            (p.category === "abs" &&
+              Array.isArray(p.abdominalSets) &&
+              p.abdominalSets.length <= 30 &&
+              p.abdominalSets.every(
+                (s: any) =>
+                  typeof s.exercise === "string" &&
+                  s.exercise.trim().length > 0 &&
+                  s.exercise.length <= 200 &&
+                  Number.isInteger(s.reps) &&
+                  s.reps >= 1 &&
+                  s.reps <= 200 &&
+                  typeof s.load === "number" &&
+                  Number.isFinite(s.load) &&
+                  s.load >= 0 &&
+                  s.load <= 2000,
+              )))
         );
       case "profile":
         return (
@@ -363,8 +408,20 @@ export function validPayload(kind: Kind, p: any): boolean {
       case "summary":
         return (
           typeof p.month === "string" &&
+          /^\d{4}-(0[1-9]|1[0-2])$/.test(p.month) &&
           Number.isInteger(p.sessions) &&
-          p.sessions >= 0
+          p.sessions >= 0 &&
+          (p.removedSessionIds === undefined ||
+            (Array.isArray(p.removedSessionIds) &&
+              p.removedSessionIds.every(
+                (id: unknown) =>
+                  typeof id === "string" &&
+                  id.trim().length > 0 &&
+                  id.length <= 100,
+              ) &&
+              new Set(p.removedSessionIds).size ===
+                p.removedSessionIds.length &&
+              p.sessions >= p.removedSessionIds.length))
         );
       default:
         return false;
@@ -537,7 +594,7 @@ export function firstPendingExerciseIndex(session: Session, docs: Entity[]) {
   );
   const index = session.workout.exercises.findIndex(
     (e) =>
-      !session.skipped[e.id] &&
+      !Object.hasOwn(session.skipped, e.id) &&
       sets.filter((s) => s.payload.exerciseId === e.id).length < e.sets,
   );
   return index < 0 ? Math.max(0, session.workout.exercises.length - 1) : index;

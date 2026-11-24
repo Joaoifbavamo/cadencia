@@ -1,4 +1,4 @@
-import { uid, type Entity, type Kind } from "./domain.ts";
+import { uid, assertPayloadSize, type Entity, type Kind } from "./domain.ts";
 import { editEntity, acknowledge, mergeRemote } from "./merge.ts";
 import { preflightImport } from "./import-validation.ts";
 import {
@@ -8,10 +8,32 @@ import {
   type CleanupJob,
 } from "./cleanup.ts";
 type Change = { id: string; kind: Kind; payload: any; deleted?: boolean };
+function sameRevisions(cached: Entity[], loaded: Entity[]) {
+  if (cached.length !== loaded.length) return false;
+  const byId = new Map(cached.map((d) => [d.id, d]));
+  return loaded.every((d) => {
+    const old = byId.get(d.id);
+    return (
+      old &&
+      old.kind === d.kind &&
+      old.version === d.version &&
+      old.change_seq === d.change_seq &&
+      old.localSeq === d.localSeq &&
+      old.mutationId === d.mutationId &&
+      old.deleted === d.deleted &&
+      old.dirty === d.dirty &&
+      old.batchId === d.batchId &&
+      old.conflict?.version === d.conflict?.version &&
+      old.conflict?.change_seq === d.conflict?.change_seq &&
+      old.conflict?.mutationId === d.conflict?.mutationId
+    );
+  });
+}
 export class LocalStore {
   private db: IDBDatabase | null = null;
   private queue: Promise<unknown> = Promise.resolve();
   private channel: BroadcastChannel | null = null;
+  private docsRevision: number | null = null;
   docs: Entity[] = [];
   cleanupJob: CleanupJob | null = null;
   readonly account: string;
@@ -70,23 +92,31 @@ export class LocalStore {
   ): Promise<Entity[]> {
     const task = async () => {
       if (!this.db) throw Error("Armazenamento indisponível.");
+      let revision = 0;
       const result = await new Promise<Entity[]>((resolve, reject) => {
         const t = this.db!.transaction(["docs", "local"], "readwrite");
         const object = t.objectStore("docs");
         const read = object.getAll();
         const local = t.objectStore("local");
         const jobRead = local.get("cleanup");
+        const revisionRead = local.get("docsRevision");
         let nextJob: CleanupJob | null = null;
         let result: Entity[] = [];
         let reason: unknown;
-        jobRead.onsuccess = () => {
+        revisionRead.onsuccess = () => {
           try {
             const all = read.result as Entity[];
             const update = transform(all, jobRead.result ?? null);
             const changed = update.changes;
+            revision = revisionRead.result ?? 0;
+            if (changed.some((e) => e !== all.find((d) => d.id === e.id))) {
+              revision++;
+              local.put(revision, "docsRevision");
+            }
             nextJob = update.job ?? jobRead.result ?? null;
             if (update.job) local.put(update.job, "cleanup");
             for (const e of changed) {
+              if (!e.deleted) assertPayloadSize(e.payload);
               object.put(e);
               const i = all.findIndex((d) => d.id === e.id);
               if (i < 0) all.push(e);
@@ -105,7 +135,10 @@ export class LocalStore {
         t.onerror = () => reject(reason || t.error);
         t.onabort = () => reject(reason || t.error);
       });
-      this.docs = result;
+      // Status-only sync notifications must not invalidate history indexes.
+      if (this.docsRevision !== revision || !sameRevisions(this.docs, result))
+        this.docs = result;
+      this.docsRevision = revision;
       if (broadcast) this.channel?.postMessage("changed");
       this.onChange();
       return result;
@@ -232,19 +265,30 @@ export class LocalStore {
   async importDocuments(input: unknown) {
     await this.atomic((docs) => {
       const documents = preflightImport(input, docs);
+      const singletonBatch = uid();
+      if (
+        documents.filter((d) => d.kind === "plan" || d.kind === "profile")
+          .length > 500
+      )
+        throw Error(
+          "Há fichas ou perfis demais para uma substituição segura. Nenhum dado foi importado.",
+        );
       return documents.map((d) => {
         const old = docs.find((e) => e.id === d.id);
-        return old
-          ? editEntity(old, d.payload, false)
+        const updated = old
+          ? editEntity(old, d.payload, !!d.deleted)
           : {
               ...d,
               version: 0,
               change_seq: 0,
-              deleted: false,
+              deleted: !!d.deleted,
               dirty: true,
               localSeq: 1,
               mutationId: uid(),
             };
+        return d.kind === "plan" || d.kind === "profile"
+          ? { ...updated, batchId: singletonBatch }
+          : { ...updated, batchId: undefined };
       });
     });
   }
@@ -283,6 +327,7 @@ export class LocalStore {
     this.channel?.close();
     this.db?.close();
     this.db = null;
+    this.docsRevision = null;
     this.docs = [];
   }
 }

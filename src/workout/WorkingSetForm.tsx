@@ -1,9 +1,10 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { unlockAlarm } from "../alarm.ts";
 import { unitLabel, type Exercise, type Entity } from "../domain.ts";
 import { adjustLoad } from "../experience.ts";
 export default function WorkingSetForm({
+  draftKey,
   exercise,
   index,
   initial,
@@ -12,6 +13,7 @@ export default function WorkingSetForm({
   increment = 2.5,
   onSave,
 }: {
+  draftKey: string;
   exercise: Exercise;
   index: number;
   initial?: Entity;
@@ -26,16 +28,47 @@ export default function WorkingSetForm({
   ) => Promise<void>;
 }) {
   const baseline = useRef(initial ? JSON.stringify(initial.payload) : null);
+  const [draft, setDraft] = useState(() => {
+    try {
+      const value = JSON.parse(localStorage.getItem(draftKey) || "null");
+      if (
+        value &&
+        ["load", "reps", "rir"].every((k) => typeof value[k] === "string") &&
+        (value.baseline === null || typeof value.baseline === "string")
+      ) {
+        baseline.current = value.baseline;
+        return value;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  });
   const repsInput = useRef<HTMLInputElement>(null);
-  const [load, setLoad] = useState(
-      initial ? String(initial.payload.load) : suggested,
+  const [load, setLoad] = useState<string>(
+      draft?.load ?? (initial ? String(initial.payload.load) : suggested),
     ),
-    [reps, setReps] = useState(initial ? String(initial.payload.reps) : ""),
+    [reps, setReps] = useState(
+      draft?.reps ?? (initial ? String(initial.payload.reps) : ""),
+    ),
     [rir, setRir] = useState(
-      initial?.payload.rir == null ? "" : String(initial.payload.rir),
+      draft?.rir ??
+        (initial?.payload.rir == null ? "" : String(initial.payload.rir)),
     ),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        draftKey,
+        JSON.stringify({ load, reps, rir, baseline: baseline.current }),
+      );
+    } catch {
+      /* Keep the editable values in memory if storage is full. */
+    }
+  }, [draftKey, load, reps, rir, draft]);
+  const remoteChanged =
+    baseline.current !== (initial ? JSON.stringify(initial.payload) : null);
   return (
     <form
       className="guided-set-form"
@@ -46,7 +79,12 @@ export default function WorkingSetForm({
         setBusy(true);
         setError("");
         try {
-          await onSave(load || suggested, reps, rir, baseline.current);
+          await onSave(load, reps, rir, baseline.current);
+          try {
+            localStorage.removeItem(draftKey);
+          } catch {
+            /* The saved record remains authoritative. */
+          }
         } catch (e) {
           setError((e as Error).message);
         } finally {
@@ -54,6 +92,31 @@ export default function WorkingSetForm({
         }
       }}
     >
+      {remoteChanged && (
+        <p role="status">
+          Esta série mudou em outro lugar. Seu rascunho foi preservado; confira
+          os valores atuais antes de salvar.
+        </p>
+      )}
+      {(draft || remoteChanged) && (
+        <button
+          type="button"
+          className="secondary"
+          disabled={busy}
+          onClick={() => {
+            baseline.current = initial ? JSON.stringify(initial.payload) : null;
+            setDraft(null);
+            setLoad(initial ? String(initial.payload.load) : suggested);
+            setReps(initial ? String(initial.payload.reps) : "");
+            setRir(
+              initial?.payload.rir == null ? "" : String(initial.payload.rir),
+            );
+            setError("");
+          }}
+        >
+          Descartar rascunho e carregar valores atuais
+        </button>
+      )}
       <div className="guided-number-fields">
         <label>
           Carga<span>{unitLabel(exercise.unit)}</span>
@@ -69,6 +132,7 @@ export default function WorkingSetForm({
               }
             }}
             value={load}
+            disabled={busy}
             onChange={(e) => setLoad(e.target.value)}
             placeholder="—"
           />
@@ -85,6 +149,7 @@ export default function WorkingSetForm({
             enterKeyHint="done"
             onFocus={(e) => e.currentTarget.select()}
             value={reps}
+            disabled={busy}
             onChange={(e) => setReps(e.target.value)}
             placeholder="—"
           />
@@ -128,6 +193,7 @@ export default function WorkingSetForm({
             aria-label={"RIR série " + (index + 1) + " opcional"}
             inputMode="decimal"
             value={rir}
+            disabled={busy}
             onChange={(e) => setRir(e.target.value)}
             placeholder="Deixe vazio se preferir"
           />

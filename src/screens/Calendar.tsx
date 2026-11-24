@@ -7,13 +7,15 @@ import {
   todayKey,
   dateValid,
   plannedWorkout,
-  uid,
   type Plan,
   type Workout,
   type Entity,
 } from "../domain.ts";
-import { Sheet, formatDate } from "../components.tsx";
+import { formatDate } from "../components.tsx";
 import { monthlyTrainingCount } from "../experience.ts";
+import ActivityComposer from "../ActivityComposer.tsx";
+import { activitySummary, type ActivityCategory } from "../activity.ts";
+import QuickActivities from "../QuickActivities.tsx";
 export default function Calendar({
   model,
   onStart,
@@ -28,16 +30,19 @@ export default function Calendar({
     todayKey(new Date(), model.profile.timezone),
   );
   const [month, setMonth] = useState(date.slice(0, 7));
-  const [activity, setActivity] = useState(false);
+  const [activity, setActivity] = useState<{
+    initial?: Entity;
+    category?: ActivityCategory;
+  } | null>(null);
   const [error, setError] = useState("");
-  const [editing, setEditing] = useState<Entity>();
-  const [savingActivity, setSavingActivity] = useState(false);
-  const [activityName, setActivityName] = useState("");
-  const openActivity = (item?: Entity) => {
-    setEditing(item);
-    setActivityName(item?.payload.name ?? "");
+  const [activityFeedback, setActivityFeedback] = useState("");
+  const openActivity = (
+    item?: Entity,
+    category: ActivityCategory = "other",
+  ) => {
     setError("");
-    setActivity(true);
+    setActivityFeedback("");
+    setActivity({ initial: item, category });
   };
   const [planned, setPlanned] = useState(
     model.profile.todayChoice?.date === date
@@ -123,6 +128,15 @@ export default function Calendar({
           />
         </label>
       </div>
+      <QuickActivities
+        onCardio={() => openActivity(undefined, "cardio")}
+        onAbs={() => openActivity(undefined, "abs")}
+      />
+      {activityFeedback && (
+        <p className="activity-confirmation" role="status">
+          {activityFeedback}
+        </p>
+      )}
       <div className="calendar-panel">
         <div className="month-title">
           <button
@@ -298,27 +312,36 @@ export default function Calendar({
         {activities
           .filter((a) => a.payload.date === date)
           .map((a) => (
-            <div className="agenda-row" key={a.id}>
+            <div className="agenda-row agenda-activity" key={a.id}>
               <div>
                 <b>{a.payload.name}</b>
                 <p>
-                  {a.payload.minutes} min · {a.payload.notes}
+                  {activitySummary(a.payload)}
+                  {a.payload.notes ? ` · ${a.payload.notes}` : ""}
                 </p>
               </div>
-              <button
-                className="text-button"
-                onClick={() => {
-                  if (confirm("Excluir esta atividade?"))
-                    model
-                      .save(a.id, "activity", a.payload, true)
-                      .catch((e) => setError(e.message));
-                }}
-              >
-                Excluir
-              </button>
-              <button className="text-button" onClick={() => openActivity(a)}>
-                Editar atividade
-              </button>
+              <div className="activity-row-actions">
+                <button
+                  className="text-button"
+                  onClick={() => {
+                    if (confirm("Excluir esta atividade?"))
+                      model
+                        .save(
+                          a.id,
+                          "activity",
+                          a.payload,
+                          true,
+                          JSON.stringify(a.payload),
+                        )
+                        .catch((e) => setError(e.message));
+                  }}
+                >
+                  Excluir
+                </button>
+                <button className="text-button" onClick={() => openActivity(a)}>
+                  Editar atividade
+                </button>
+              </div>
             </div>
           ))}
         {recovery && (
@@ -369,95 +392,19 @@ export default function Calendar({
       </section>
       {removal.controls}
       {activity && (
-        <Sheet
-          title={editing ? "Editar atividade" : "Nova atividade"}
-          onClose={() => !savingActivity && setActivity(false)}
-        >
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              if (savingActivity) return;
-              const f = new FormData(e.currentTarget);
-              setSavingActivity(true);
-              try {
-                await model.save(
-                  editing?.id ?? uid(),
-                  "activity",
-                  {
-                    date,
-                    name: String(f.get("name")).trim(),
-                    minutes: Number(f.get("minutes")),
-                    notes: String(f.get("notes")),
-                  },
-                  false,
-                  editing ? JSON.stringify(editing.payload) : null,
-                );
-                setActivity(false);
-              } catch (e) {
-                setError((e as Error).message);
-              } finally {
-                setSavingActivity(false);
-              }
-            }}
-          >
-            {!editing && (
-              <div
-                className="activity-presets"
-                role="group"
-                aria-label="Atalhos de atividade"
-              >
-                {["Cardio", "Abdômen", "Caminhada", "Bicicleta"].map((name) => (
-                  <button
-                    key={name}
-                    type="button"
-                    className="secondary"
-                    aria-pressed={activityName === name}
-                    onClick={() => setActivityName(name)}
-                  >
-                    {name}
-                  </button>
-                ))}
-              </div>
-            )}
-            <label>
-              Atividade
-              <input
-                name="name"
-                value={activityName}
-                onChange={(e) => setActivityName(e.target.value)}
-                required
-                placeholder="Caminhada, bicicleta…"
-              />
-            </label>
-            <label>
-              Duração em minutos
-              <input
-                name="minutes"
-                defaultValue={editing?.payload.minutes ?? ""}
-                type="number"
-                min="1"
-                max="1440"
-                required
-                inputMode="numeric"
-              />
-            </label>
-            <label>
-              Observação opcional
-              <textarea
-                name="notes"
-                defaultValue={editing?.payload.notes ?? ""}
-              />
-            </label>
-            {error && (
-              <p className="error" role="alert">
-                {error}
-              </p>
-            )}
-            <button className="primary" disabled={savingActivity}>
-              {savingActivity ? "Salvando…" : "Salvar atividade"}
-            </button>
-          </form>
-        </Sheet>
+        <ActivityComposer
+          model={model}
+          date={date}
+          initial={activity.initial}
+          initialCategory={activity.category}
+          onClose={() => setActivity(null)}
+          onSaved={(next) => {
+            setActivity(null);
+            selectDate(next);
+            setMonth(next.slice(0, 7));
+            setActivityFeedback("Atividade salva neste aparelho.");
+          }}
+        />
       )}
     </>
   );
